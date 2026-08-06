@@ -1,0 +1,1219 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PP Centrum — Seguimiento y Control Pilotaje </title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c1016;--panel:#131922;--panel-2:#1a222e;--line:#232d3b;--txt:#e8edf4;--txt-dim:#8b97a8;--txt-faint:#5b6676;--amber:#1e90ff;--amber-soft:#cfe9ff;--cyan:#3ad6c7;--green:#5fd97a;--yellow:#ffcf4a;--red:#ff5c6c;--mono:'IBM Plex Mono',monospace;--sans:'Archivo',sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:var(--sans);background:var(--bg);color:var(--txt);overflow:hidden;background-image:radial-gradient(900px 500px at 85% -10%,rgba(30,144,255,.06),transparent),radial-gradient(700px 500px at -5% 110%,rgba(58,214,199,.06),transparent)}
+  .app{display:grid;grid-template-columns:236px 1fr 372px;grid-template-rows:64px 1fr;height:100vh}
+  .side{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:16px 12px}
+  .side h3{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-faint);margin:4px 6px 10px}
+  .proj{padding:11px 12px;border-radius:10px;cursor:pointer;margin-bottom:6px;border:1px solid transparent;transition:.15s;position:relative}
+  .proj:hover{background:var(--panel-2)}
+  .proj.active{background:var(--panel-2);border-color:var(--line)}
+  .proj.active::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--amber)}
+  .proj .pn{font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px}
+  .proj .pm{font-family:var(--mono);font-size:10.5px;color:var(--txt-dim);margin-top:4px}
+  .proj .pbar{height:4px;background:#0c1016;border-radius:3px;margin-top:7px;overflow:hidden}
+  .proj .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan))}
+  .new-proj{margin-top:8px;width:100%;border:1px dashed var(--line);background:transparent;color:var(--txt-dim);border-radius:10px;padding:10px;font-family:var(--sans);font-size:12px;cursor:pointer;transition:.15s}
+  .new-proj:hover{border-color:var(--amber);color:var(--amber)}
+  header{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 22px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(26,34,46,.6),rgba(19,25,34,.3));backdrop-filter:blur(8px)}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.02em;font-size:19px}
+  .brand .mark{width:110px;height:40px;border-radius:8px;background-color: #fff;flex:none;object-fit:cover;overflow:hidden;display:inline-block}
+  .brand b{color:var(--amber)}
+  .file-pill{font-family:var(--mono);font-size:11px;color:var(--txt-dim);border:1px solid var(--line);padding:5px 11px;border-radius:20px}
+  .file-pill b{color:var(--cyan)}
+  .header-spacer{flex:1}
+  .live{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11.5px;color:var(--txt-dim)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(95,217,122,.5)}70%{box-shadow:0 0 0 7px rgba(95,217,122,0)}100%{box-shadow:0 0 0 0 rgba(95,217,122,0)}}
+  .btn{font-family:var(--sans);font-weight:600;font-size:13px;cursor:pointer;border:none;border-radius:9px;padding:9px 16px;display:flex;align-items:center;gap:8px;transition:.18s}
+  .btn-primary{background:linear-gradient(135deg,var(--amber),#0f52ba);color:#071524;box-shadow:0 4px 14px rgba(30,144,255,.25)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(30,144,255,.4)}
+  .btn-ghost{background:var(--panel-2);color:var(--txt);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--amber);color:var(--amber)}
+  .center{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+  .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+  .stat{background:var(--panel);padding:12px 15px}
+  .stat .sl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-faint)}
+  .stat .sv{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+  .stat .sv small{font-size:11px;font-weight:600;color:var(--txt-dim)}
+  .stat .su{font-family:var(--mono);font-size:9.5px;margin-top:2px}
+  .mapwrap{flex:1;position:relative;min-height:0}
+  #map{display:block;width:100%;height:100%;cursor:grab}#map:active{cursor:grabbing}
+  .ctl{position:absolute;z-index:30;background:rgba(19,25,34,.92);border:1px solid var(--line);border-radius:11px;backdrop-filter:blur(8px)}
+  .switch{right:16px;top:16px;display:flex;gap:4px;padding:4px}
+  .switch button{font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;padding:7px 11px;background:transparent;color:var(--txt-dim);transition:.15s}
+  .switch button:hover{color:var(--txt)}.switch button.active{background:var(--amber);color:#071524}
+  .zoomctl{right:16px;top:64px;display:flex;flex-direction:column;gap:4px;background:none;border:none}
+  .zoomctl button{width:34px;height:34px;border:1px solid var(--line);background:rgba(19,25,34,.92);color:var(--txt);border-radius:9px;font-size:18px;cursor:pointer;backdrop-filter:blur(8px);transition:.15s}
+  .zoomctl button:hover{border-color:var(--amber);color:var(--amber)}
+  .layers{left:16px;top:16px;padding:10px 12px}
+  .layers .lt{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--txt-faint);text-transform:uppercase;margin-bottom:7px}
+  .lay{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt-dim);cursor:pointer;padding:3px 0}
+  .lay input{accent-color:var(--amber)}
+  .magb{flex:1;font-family:var(--mono);font-size:10.5px;font-weight:600;cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:5px 4px;background:transparent;color:var(--txt-dim);transition:.15s}
+  .magb.active{background:var(--amber);color:#071524;border-color:var(--amber)}
+  .legend{left:16px;bottom:16px;padding:11px 13px}
+  .legend .lt{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--txt-faint);text-transform:uppercase;margin-bottom:7px}
+  .legend .lr{display:flex;align-items:center;gap:8px;margin-top:5px;color:var(--txt-dim);font-size:11px}
+  .mk{width:11px;height:11px;flex:none}
+  .tip{position:absolute;z-index:40;pointer-events:none;background:var(--panel-2);border:1px solid var(--amber);border-radius:9px;padding:9px 12px;font-family:var(--mono);font-size:11px;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;transition:opacity .1s;white-space:nowrap}
+  .tip b{color:var(--amber);font-family:var(--sans);font-size:12px}.tip span{color:var(--txt-dim)}
+  .detail{position:absolute;right:16px;bottom:16px;z-index:45;width:300px;background:rgba(15,20,28,.97);border:1px solid var(--line);border-radius:14px;padding:15px 16px;backdrop-filter:blur(10px);box-shadow:0 16px 48px rgba(0,0,0,.55);display:none}
+  .detail.show{display:block}
+  .dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .did{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--amber)}
+  .dtw{font-family:var(--mono);font-size:11px;color:var(--txt-dim);margin-left:6px}
+  .dx{background:var(--panel-2);border:1px solid var(--line);color:var(--txt-dim);width:26px;height:26px;border-radius:7px;cursor:pointer;font-size:15px;line-height:1}
+  .dx:hover{border-color:var(--amber);color:var(--amber)}
+  .dbadge{font-family:var(--mono);font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:20px;display:inline-block;margin-bottom:12px}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .dcell{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  .dcell .dl{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-faint)}
+  .dcell .dv{font-family:var(--mono);font-size:20px;font-weight:700;margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .dcell .dsub{font-family:var(--mono);font-size:10px;color:var(--txt-dim);margin-top:2px}
+  .drow{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--txt-dim);padding:8px 0;border-top:1px dashed var(--line)}
+  .drow b{font-family:var(--mono);font-size:14px;font-weight:700}
+  .dcoords{font-family:var(--mono);font-size:10.5px;color:var(--txt-dim);line-height:1.7;margin-top:6px;padding-top:8px;border-top:1px dashed var(--line)}
+  .dhint{font-size:11.5px;line-height:1.5;margin-top:10px;padding:9px 11px;border-radius:9px;background:rgba(255,122,47,.1);border:1px solid rgba(255,122,47,.3);color:var(--amber-soft,#ffb37a)}
+  .right{border-left:1px solid var(--line);background:var(--panel);overflow:hidden;display:flex;flex-direction:column}
+  .prog{padding:16px 18px;border-bottom:1px solid var(--line)}
+  .prog .pt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .prog .pt b{font-size:15px}.prog .pt .pc{font-family:var(--mono);font-size:13px;color:var(--green);font-weight:600}
+  .bar{height:9px;background:var(--panel-2);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));border-radius:6px;transition:width .6s}
+  .prog .sub{font-family:var(--mono);font-size:10.5px;color:var(--txt-dim);margin-top:8px}
+  .search{padding:12px 14px;border-bottom:1px solid var(--line)}
+  .twr-sec{padding:13px 14px;border-bottom:1px solid var(--line)}
+  .twr-lt{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt-faint);margin-bottom:9px}
+  .twr-btns{display:flex;gap:6px}
+  .twrb{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:9px 6px;background:transparent;color:var(--txt-dim);transition:.15s}
+  .twrb:hover{color:var(--txt);border-color:var(--txt-faint)}
+  .twrb.active{background:var(--panel-2);color:var(--txt);border-color:var(--amber)}
+  .twrb .d{width:9px;height:9px;border-radius:50%;flex:none}
+  .twrb span:not(.d){font-family:var(--mono);font-size:10.5px;color:var(--txt-faint)}
+  .twrb.active span:not(.d){color:var(--cyan)}
+  .search input{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px 12px;font-family:var(--mono);font-size:12px;outline:none}
+  .search input:focus{border-color:var(--amber)}
+  .filt{display:flex;gap:5px;margin-top:9px;flex-wrap:wrap}
+  .filt button{flex:1;min-width:calc(50% - 3px);font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:7px 4px;background:transparent;color:var(--txt-dim);transition:.15s}
+  .filt button.active{background:var(--panel-2);color:var(--txt);border-color:var(--amber)}
+  .tbl-head{display:grid;grid-template-columns:62px 1fr 64px 54px;gap:6px;padding:8px 16px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-faint);border-bottom:1px solid var(--line)}
+  .pts{flex:1;overflow-y:auto}
+  .pt-row{display:grid;grid-template-columns:62px 1fr 64px 54px;gap:6px;align-items:center;padding:9px 16px;cursor:pointer;transition:.1s;border-bottom:1px solid rgba(35,45,59,.4)}
+  .pt-row:hover{background:var(--panel-2)}
+  .pt-row.sel{background:rgba(255,122,47,.12);box-shadow:inset 3px 0 0 var(--amber)}
+  .pt-row .id{font-family:var(--mono);font-size:12px;font-weight:600}
+  .badge{font-family:var(--mono);font-size:9.5px;font-weight:600;padding:3px 7px;border-radius:20px;text-align:center;width:fit-content}
+  .b-ok{background:rgba(95,217,122,.15);color:var(--green)}
+  .b-warn{background:rgba(255,207,74,.15);color:var(--yellow)}
+  .b-bad{background:rgba(255,92,108,.15);color:var(--red)}
+  .b-pend{background:rgba(139,151,168,.12);color:var(--txt-dim)}
+  .pt-row .dev{font-family:var(--mono);font-size:11.5px;text-align:right;font-variant-numeric:tabular-nums}
+  ::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--panel)}::-webkit-scrollbar-track{background:transparent}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--panel-2);border:1px solid var(--amber);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:9999;transition:transform .35s cubic-bezier(.2,.9,.3,1.2);font-size:13.5px;font-weight:500}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast .ti{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--amber),#ff5a1f);display:flex;align-items:center;justify-content:center;flex:none;color:#1a0f06}
+  .toast small{display:block;color:var(--txt-dim);font-weight:400;font-size:11.5px;margin-top:2px}
+  /* ===========================
+   VERSIÓN MÓVIL
+=========================== */
+<button class="btn btn-ghost mobile-menu"
+onclick="toggleProjects()">
+☰
+</button>
+.mobile-menu{
+    display:none;
+}
+
+@media (max-width: 768px){
+  .mobile-menu{
+    display:flex;
+    align-items:center;
+        justify-content:center;
+        width:38px;
+        height:38px;
+        border-radius:10px;
+        background:var(--panel-2);
+        border:1px solid var(--line);
+        color:var(--txt);
+        font-size:20px;
+        cursor:pointer;
+  }
+  html,body{
+    height:100dvh;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+  }
+  .side{
+
+    display:block;
+
+    position:fixed;
+
+    top:52px;
+
+    left:0;
+
+    bottom:0;
+
+    width:280px;
+
+    z-index:500;
+
+    transform:translateX(-100%);
+
+    transition:transform .3s ease;
+
+    background:var(--panel);
+
+    box-shadow:10px 0 30px rgba(0,0,0,.45);
+
+  }
+
+
+  .side.open{
+
+    transform:translateX(0);
+
+  }
+  .app{
+    display:block;
+    flex-direction:column;
+    width:100%;
+    height:100dvh;
+  }
+
+  header{
+    flex:none;
+    width:100%;
+    height:56px;
+    padding:0 12px;
+    overflow:hidden;
+  }
+
+  /* El mapa ocupa toda la pantalla */
+  .center{
+    position:absolute;
+    top:52px;
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    height:calc(100dvh - 52px);
+  }
+
+  .stats{
+    display:none;
+  }
+
+  .mapwrap{
+    width:100%;
+    height:100%;
+  }
+
+  #map{
+    width:100%;
+    height:100%;
+  }
+
+  /* Panel derecho sobre el mapa */
+  .right{
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:38vh;
+    z-index:100;
+    border-left:none;
+    border-top:1px solid var(--line);
+    border-radius:18px 18px 0 0;
+    box-shadow:0 -10px 30px rgba(0,0,0,.45);
+    height:28vh;
+  }
+}
+</style>
+
+<div class="app">
+  <header>
+    <button class="mobile-menu" onclick="toggleSide()">
+☰
+</button>
+    <div class="brand"><img src="logo bajoterra.svg" class="mark" alt="Logo">Bajo<b>Terra</b></div>
+    <div class="file-pill">📐 Control de replanteo · <b id="filePill">PILOTES_BARCELONA.dwg</b></div>
+    <div class="header-spacer"></div>
+    <div class="live"><span class="dot"></span> <span id="liveTxt">i76 conectado</span></div>
+    <button class="btn btn-ghost" onclick="toast('Sincronizado con i76','Últimas capturas hace 6 min · WiFi')">⟳ Sincronizar</button>
+    <button class="btn btn-primary" onclick="expReport()">⤓ Reporte de avance</button>
+  </header>
+  <aside class="side">
+    <h3>Proyectos</h3>
+    <div id="projList"></div>
+    <button class="new-proj" onclick="toast('Agregar proyecto','Envíame el DWG/CSV y lo cargo como nuevo proyecto')">+ Nuevo proyecto</button>
+  </aside>
+  <main class="center">
+    <div class="stats" id="stats"></div>
+    <div class="mapwrap">
+      <canvas id="map"></canvas>
+      <div class="ctl switch">
+        <button class="active" data-v="plan" onclick="setV('plan')">▦ Plano</button>
+        <button data-v="terr" onclick="setV('terr')">🛰 Terreno</button>
+        <button data-v="topo" onclick="setV('topo')">◬ Topográfico</button>
+      </div>
+      <div class="ctl zoomctl">
+        <button onclick="zoomBy(1.25)">+</button>
+        <button onclick="zoomBy(0.8)">−</button>
+        <button onclick="fitView()" style="font-size:13px">⤢</button>
+      </div>
+      <div class="ctl layers">
+        <div class="lt">Capas</div>
+        <label class="lay"><input type="checkbox" id="lyDesign" checked onchange="draw()"> Diseño (DWG)</label>
+        <label class="lay"><input type="checkbox" id="lyBuilt" checked onchange="draw()"> Replanteado (i76)</label>
+        <label class="lay"><input type="checkbox" id="lyVec" checked onchange="draw()"> Vector de desvío</label>
+        <label class="lay"><input type="checkbox" id="lyHull" onchange="draw()"> Huella / área por torre</label>
+        <div style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
+          <div class="lt" style="margin-bottom:6px">Exagerar desvío</div>
+          <div style="display:flex;gap:4px" id="magBtns">
+            <button class="magb active" data-m="1" onclick="setMag(1)">×1</button>
+            <button class="magb" data-m="25" onclick="setMag(25)">×25</button>
+            <button class="magb" data-m="60" onclick="setMag(60)">×60</button>
+          </div>
+        </div>
+        <div style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
+          <button class="magb" id="measBtn" style="width:100%" onclick="toggleMeasure()">📏 Medir distancia</button>
+          <div class="lt" id="measOut" style="margin-top:7px;display:none;color:var(--cyan);letter-spacing:0;text-transform:none;font-size:11px"></div>
+        </div>
+      </div>
+      <div class="ctl legend">
+        <div class="lt">Estado del pilote</div>
+        <div class="lr"><span class="mk" style="border:1.5px dashed #8b97a8;border-radius:50%"></span> Diseño / pendiente</div>
+        <div class="lr"><span class="mk" style="background:#5fd97a;border-radius:50%"></span> Hecho · en tolerancia (≤5cm)</div>
+        <div class="lr"><span class="mk" style="background:#ffcf4a;border-radius:50%"></span> Hecho · revisar (5–10cm)</div>
+        <div class="lr"><span class="mk" style="background:#ff5c6c;border-radius:50%"></span> Hecho · fuera (&gt;10cm)</div>
+      </div>
+      <div class="tip" id="tip"></div>
+      <div class="detail" id="detail">
+        <div class="dh">
+          <div><span class="did" id="dId"></span> <span class="dtw" id="dTw"></span></div>
+          <button class="dx" onclick="closeDetail()">×</button>
+        </div>
+        <div class="dbadge" id="dStatus"></div>
+        <div class="dgrid">
+          <div class="dcell"><div class="dl">Δ ESTE (X)</div><div class="dv" id="dDE"></div><div class="dsub" id="dDEh"></div></div>
+          <div class="dcell"><div class="dl">Δ NORTE (Y)</div><div class="dv" id="dDN"></div><div class="dsub" id="dDNh"></div></div>
+        </div>
+        <div class="drow"><span>Desviación radial</span><b id="dRad"></b></div>
+        <div class="dcoords" id="dCoords"></div>
+        <div class="dhint" id="dHint"></div>
+      </div>
+    </div>
+  </main>
+  <aside class="right">
+    <div class="prog">
+      <div class="pt"><b>Avance de replanteo</b><span class="pc" id="pct"></span></div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="sub" id="progSub"></div>
+    </div>
+    <div class="twr-sec">
+      <div class="twr-lt">Aislar torre / sector</div>
+      <div class="twr-btns" id="twrBtns"></div>
+    </div>
+    <div class="search">
+      <input id="q" placeholder="Buscar pilote… (ej. T2-45)" oninput="renderList()">
+      <div class="filt">
+        <button class="active" data-f="all" onclick="setF('all')">Todos</button>
+        <button data-f="pend" onclick="setF('pend')">Pendientes</button>
+        <button data-f="done" onclick="setF('done')">Completados</button>
+        <button data-f="bad" onclick="setF('bad')">Fuera de tol.</button>
+      </div>
+    </div>
+    <div class="tbl-head"><div>Pilote</div><div>Estado</div><div style="text-align:right">Desvío</div><div style="text-align:right">Torre</div></div>
+    <div class="pts" id="list"></div>
+  </aside>
+</div>
+<div class="toast" id="toast"><div class="ti">✓</div><div id="toastTxt"></div></div>
+
+<script>
+const P_BAR = [
+  ["T1-51", 99263.87, 99792.171, "T1", 1, 99263.871, 99792.173, 0.3],
+  ["T1-49", 99261.177, 99791.007, "T1", 1, 99261.177, 99791.007, 0.09],
+  ["T1-5", 99239.357, 99797.866, "T1", 1, 99239.357, 99797.866, 0.09],
+  ["T1-2", 99242.068, 99802.256, "T1", 1, 99242.068, 99802.256, 0.09],
+  ["T1-115", 99238.9, 99758.01, "T1", 1, 99238.91, 99758.01, 0.09],
+  ["T1-114", 99240.134, 99757.249, "T1", 1, 99240.134, 99757.249, 0.09],
+  ["T1-136", 99230.889, 99748.565, "T1", 1, 99230.889, 99748.565, 0.09],
+  ["T1-139", 99235.28, 99745.854, "T1", 1, 99235.28, 99745.854, 0.09],
+  ["T1-8", 99242.063, 99798.375, "T1", 1, 99242.063, 99798.375, 0.09],
+  ["T1-9", 99242.825, 99799.609, "T1", 0, null, null, null],
+  ["T1-62", 99251.105, 99782.776, "T1", 1, 99251.105, 99782.776, 0.09],
+  ["T1-133", 99233.547, 99749.339, "T1", 1, 99233.547, 99749.339, 0.09],
+  ["T1-132", 99234.781, 99748.577, "T1", 1, 99234.781, 99748.577, 0.09],
+  ["T1-35", 99252.006, 99786.697, "T1", 1, 99252.006, 99786.697, 0.09],
+  ["T1-37", 99254.401, 99790.577, "T1", 1, 99254.401, 99790.577, 0.09],
+  ["T1-44", 99256.301, 99786.725, "T1", 1, 99256.301, 99786.725, 0.09],
+  ["T1-45", 99255.104, 99784.785, "T1", 1, 99255.104, 99784.785, 0.09],
+  ["T1-42", 99257.748, 99790.192, "T1", 1, 99257.748, 99790.192, 0.09],
+  ["T1-41", 99258.589, 99792.059, "T1", 1, 99258.589, 99792.059, 0.09],
+  ["T1-40", 99260.111, 99795.314, "T1", 1, 99260.111, 99795.314, 0.09],
+  ["T1-38", 99255.402, 99791.846, "T1", 1, 99255.402, 99791.846, 0.09],
+  ["T1-39", 99258.251, 99796.462, "T1", 1, 99258.251, 99796.462, 0.09],
+  ["T1-29", 99251.581, 99794.204, "T1", 1, 99251.581, 99794.204, 0.09],
+  ["T1-30", 99254.431, 99798.82, "T1", 1, 99254.431, 99798.82, 0.09],
+  ["T1-28", 99250.82, 99792.97, "T1", 1, 99250.82, 99792.97, 0.09],
+  ["T1-27", 99247.954, 99788.328, "T1", 1, 99247.954, 99788.328, 0.09],
+  ["T1-23", 99249.573, 99795.444, "T1", 1, 99249.573, 99795.444, 0.09],
+  ["T1-22", 99250.455, 99796.873, "T1", 1, 99250.455, 99796.873, 0.09],
+  ["T1-21", 99252.422, 99800.06, "T1", 1, 99252.422, 99800.06, 0.09],
+  ["T1-24", 99248.811, 99794.21, "T1", 1, 99248.811, 99794.21, 0.09],
+  ["T1-25", 99247.929, 99792.78, "T1", 1, 99247.929, 99792.78, 0.09],
+  ["T1-26", 99245.946, 99789.568, "T1", 1, 99245.946, 99789.568, 0.09],
+  ["T1-32", 99253.492, 99793.025, "T1", 1, 99253.492, 99793.025, 0.09],
+  ["T1-31", 99255.963, 99797.029, "T1", 1, 99255.965, 99797.030, 0.09],
+  ["T1-33", 99252.73, 99791.791, "T1", 1, 99252.73, 99791.791, 0.09],
+  ["T1-34", 99250.227, 99787.736, "T1", 1, 99250.227, 99787.736, 0.09],
+  ["T1-19", 99247.203, 99796.907, "T1", 0, null, null, null],
+  ["T1-20", 99249.611, 99800.808, "T1", 1, 99249.611, 99800.808, 0.09],
+  ["T1-18", 99246.441, 99795.673, "T1", 0, null, null, null],
+  ["T1-17", 99244.033, 99791.771, "T1", 1, 99244.033, 99791.771, 0.09],
+  ["T1-13", 99244.833, 99798.369, "T1", 0, null, null, null],
+  ["T1-12", 99245.716, 99799.799, "T1", 0, null, null, null],
+  ["T1-11", 99247.683, 99802.986, "T1", 1, 99247.683, 99802.986, 0.09],
+  ["T1-10", 99245.675, 99804.225, "T1", 1, 99245.675, 99804.225, 0.09],
+  ["T1-3", 99241.093, 99800.678, "T1", 1, 99241.093, 99800.678, 0.09],
+  ["T1-1", 99243.565, 99804.682, "T1", 1, 99243.565, 99804.682, 0.09],
+  ["T1-14", 99244.072, 99797.136, "T1", 1, 99244.072, 99797.136, 0.09],
+  ["T1-15", 99243.189, 99795.706, "T1", 1, 99243.189, 99795.706, 0.09],
+  ["T1-16", 99241.206, 99792.494, "T1", 1, 99241.206, 99792.494, 0.09],
+  ["T1-7", 99239.198, 99793.733, "T1", 1, 99239.200, 99793.733, 0.09],
+  ["T1-4", 99240.332, 99799.444, "T1", 0, null, null, null],
+  ["T1-6", 99237.729, 99795.228, "T1", 1, 99237.731, 99795.228, 0.009],
+  ["T1-118", 99237.689, 99756.049, "T1", 1, 99237.689, 99756.049, 0.09],
+  ["T1-117", 99233.005, 99758.94, "T1", 1, 99233.005, 99758.94, 0.09],
+  ["T1-123", 99236.323, 99753.836, "T1", 1, 99236.323, 99753.836, 0.09],
+  ["T1-124", 99231.639, 99756.728, "T1", 1, 99231.639, 99756.728, 0.09],
+  ["T1-127", 99234.805, 99751.377, "T1", 1, 99234.805, 99751.377, 0.09],
+  ["T1-126", 99233.376, 99752.259, "T1", 1, 99233.376, 99752.259, 0.09],
+  ["T1-125", 99230.163, 99754.242, "T1", 1, 99230.163, 99754.242, 0.09],
+  ["T1-134", 99228.905, 99752.204, "T1", 1, 99228.905, 99752.204, 0.09],
+  ["T1-137", 99232.468, 99747.59, "T1", 1, 99232.468, 99747.59, 0.09],
+  ["T1-135", 99228.464, 99750.062, "T1", 1, 99228.464, 99750.062, 0.09],
+  ["T1-105", 99241.644, 99762.456, "T1", 1, 99241.644, 99762.456, 0.09],
+  ["T1-106", 99237.743, 99764.865, "T1", 1, 99237.743, 99764.865, 0.09],
+  ["T1-109", 99240.166, 99760.061, "T1", 1, 99240.166, 99760.061, 0.09],
+  ["T1-108", 99238.736, 99760.943, "T1", 1, 99238.736, 99760.943, 0.09],
+  ["T1-107", 99235.524, 99762.926, "T1", 1, 99235.524, 99762.926, 0.09],
+  ["T1-116", 99234.279, 99760.909, "T1", 1, 99234.279, 99760.909, 0.09],
+  ["T1-90", 99245.542, 99768.77, "T1", 1, 99245.542, 99768.77, 0.09],
+  ["T1-89", 99241.538, 99771.242, "T1", 1, 99241.538, 99771.242, 0.09],
+  ["T1-95", 99244.362, 99766.86, "T1", 1, 99244.362, 99766.86, 0.09],
+  ["T1-99", 99243.123, 99764.852, "T1", 1, 99243.123, 99764.852, 0.09],
+  ["T1-98", 99241.693, 99765.734, "T1", 1, 99241.693, 99765.734, 0.09],
+  ["T1-96", 99239.721, 99769.725, "T1", 1, 99239.721, 99769.725, 0.09],
+  ["T1-97", 99238.481, 99767.717, "T1", 1, 99238.481, 99767.717, 0.09],
+  ["T1-77", 99249.439, 99775.084, "T1", 1, 99249.439, 99775.084, 0.09],
+  ["T1-78", 99245.538, 99777.493, "T1", 1, 99245.538, 99777.493, 0.09],
+  ["T1-81", 99247.96, 99772.689, "T1", 1, 99247.96, 99772.689, 0.09],
+  ["T1-80", 99246.531, 99773.571, "T1", 1, 99246.532, 99773.572, 0.09],
+  ["T1-87", 99246.721, 99770.681, "T1", 1, 99246.720, 99770.680, 0.09],
+  ["T1-79", 99243.319, 99775.554, "T1", 1, 99243.320, 99775.555, 0.09],
+  ["T1-88", 99242.079, 99773.546, "T1", 1, 99242.079, 99773.546, 0.09],
+  ["T1-63", 99253.336, 99781.398, "T1", 1, 99253.336, 99781.398, 0.09],
+  ["T1-61", 99249.333, 99783.87, "T1", 1, 99249.333, 99783.87, 0.09],
+  ["T1-71", 99250.918, 99777.48, "T1", 1, 99250.918, 99777.48, 0.09],
+  ["T1-70", 99249.488, 99778.362, "T1", 1, 99249.488, 99778.362, 0.09],
+  ["T1-68", 99247.515, 99782.353, "T1", 1, 99247.516, 99782.354, 0.09],
+  ["T1-69", 99246.276, 99780.345, "T1", 1, 99246.276, 99780.345, 0.09],
+  ["T1-119", 99238.897, 99755.245, "T1", 1, 99238.897, 99755.245, 0.09],
+  ["T1-120", 99242.875, 99752.789, "T1", 1, 99242.875, 99752.789, 0.09],
+  ["T1-122", 99237.583, 99753.117, "T1", 1, 99237.583, 99753.117, 0.09],
+  ["T1-121", 99241.562, 99750.662, "T1", 1, 99241.562, 99750.662, 0.09],
+  ["T1-128", 99236.039, 99750.615, "T1", 1, 99236.039, 99750.615, 0.09],
+  ["T1-129", 99237.469, 99749.733, "T1", 1, 99237.469, 99749.733, 0.09],
+  ["T1-130", 99240.63, 99747.782, "T1", 1, 99240.63, 99747.782, 0.09],
+  ["T1-131", 99239.372, 99745.744, "T1", 1, 99239.372, 99745.744, 0.09],
+  ["T1-138", 99233.702, 99746.829, "T1", 1, 99233.702, 99746.829, 0.09],
+  ["T1-140", 99237.68, 99744.373, "T1", 1, 99237.68, 99744.373, 0.09],
+  ["T1-104", 99242.878, 99761.695, "T1", 1, 99242.878, 99761.695, 0.09],
+  ["T1-103", 99246.754, 99759.302, "T1", 1, 99246.754, 99759.302, 0.09],
+  ["T1-110", 99241.399, 99759.299, "T1", 1, 99241.399, 99759.299, 0.09],
+  ["T1-111", 99242.829, 99758.417, "T1", 1, 99242.829, 99758.417, 0.09],
+  ["T1-112", 99245.99, 99756.466, "T1", 1, 99245.99, 99756.466, 0.09],
+  ["T1-113", 99244.751, 99754.457, "T1", 1, 99244.751, 99754.457, 0.09],
+  ["T1-91", 99246.775, 99768.009, "T1", 1, 99246.775, 99768.009, 0.09],
+  ["T1-92", 99250.754, 99765.553, "T1", 1, 99250.754, 99765.553, 0.09],
+  ["T1-94", 99245.596, 99766.098, "T1", 1, 99245.596, 99766.098, 0.09],
+  ["T1-100", 99244.357, 99764.09, "T1", 1, 99244.357, 99764.09, 0.09],
+  ["T1-101", 99245.786, 99763.208, "T1", 1, 99245.786, 99763.208, 0.09],
+  ["T1-93", 99250.187, 99763.265, "T1", 1, 99250.187, 99763.265, 0.09],
+  ["T1-102", 99248.948, 99761.256, "T1", 1, 99248.948, 99761.256, 0.09],
+  ["T1-76", 99250.673, 99774.323, "T1", 1, 99250.673, 99774.323, 0.09],
+  ["T1-75", 99254.549, 99771.93, "T1", 1, 99254.549, 99771.93, 0.09],
+  ["T1-82", 99249.194, 99771.927, "T1", 1, 99249.194, 99771.927, 0.09],
+  ["T1-83", 99250.624, 99771.045, "T1", 1, 99250.626, 99771.050, 0.09],
+  ["T1-86", 99247.955, 99769.919, "T1", 1, 99247.955, 99769.919, 0.09],
+  ["T1-84", 99253.785, 99769.094, "T1", 1, 99253.785, 99769.094, 0.09],
+  ["T1-85", 99252.546, 99767.085, "T1", 1, 99252.546, 99767.085, 0.09],
+  ["T1-64", 99254.57, 99780.637, "T1", 1, 99254.57, 99780.637, 0.09],
+  ["T1-65", 99258.549, 99778.181, "T1", 1, 99258.549, 99778.181, 0.09],
+  ["T1-67", 99253.391, 99778.726, "T1", 1, 99253.391, 99778.726, 0.09],
+  ["T1-72", 99252.151, 99776.718, "T1", 1, 99252.151, 99776.718, 0.09],
+  ["T1-73", 99253.581, 99775.836, "T1", 1, 99253.582, 99775.837, 0.09],
+  ["T1-66", 99257.982, 99775.893, "T1", 1, 99257.982, 99775.893, 0.09],
+  ["T1-74", 99256.742, 99773.884, "T1", 1, 99256.742, 99773.884, 0.09],
+  ["T1-60", 99255.75, 99782.547, "T1", 1, 99255.75, 99782.547, 0.09],
+  ["T1-46", 99256.989, 99784.555, "T1", 1, 99256.989, 99784.555, 0.09],
+  ["T1-53", 99258.419, 99783.673, "T1", 1, 99258.419, 99783.673, 0.09],
+  ["T1-50", 99262.292, 99793.146, "T1", 1, 99262.292, 99793.146, 0.09],
+  ["T1-47", 99258.468, 99786.951, "T1", 1, 99258.468, 99786.951, 0.09],
+  ["T1-48", 99259.867, 99788.884, "T1", 1, 99259.867, 99788.884, 0.09],
+  ["T1-52", 99261.323, 99788.379, "T1", 1, 99261.323, 99788.379, 0.09],
+  ["T1-59", 99260.34, 99779.713, "T1", 1, 99260.34, 99779.713, 0.09],
+  ["T1-58", 99261.58, 99781.722, "T1", 1, 99261.58, 99781.722, 0.09],
+  ["T1-57", 99262.344, 99784.558, "T1", 1, 99262.344, 99784.558, 0.09],
+  ["T1-56", 99264.537, 99786.512, "T1", 1, 99264.537, 99786.512, 0.09],
+  ["T1-55", 99265.777, 99788.521, "T1", 1, 99265.777, 99788.521, 0.09],
+  ["T1-54", 99266.27, 99790.69, "T1", 1, 99266.27, 99790.69, 0.09],
+];
+
+const M_BAR = {"n": 138, "done": 0, "pending": 138, "minx": 99228.464, "maxx": 99266.27, "miny": 99744.373, "maxy": 99804.682, "diam": 0.6, "t1": 138, "t2": 0, "avgdev": 0.0, "maxdev": 0.0, "tol_ok": 0, "tol_warn": 0, "tol_bad": 0, "tol": 5.0};
+
+const P_NY = [
+  ["T2-145", 99422.625, 99689.942, "T2", 1, 99422.624, 99689.943, 0.002],
+  ["T2-146", 99423.564, 99691.454, "T2", 1, 99423.563, 99691.455, 0.002],
+  ["T2-153", 99417.139, 99689.489, "T2", 1, 99417.138, 99689.490, 0.002],
+  ["T2-156", 99419.810, 99693.787, "T2", 1, 99419.809, 99693.788, 0.002],
+  ["T2-179", 99408.462, 99700.837, "T2", 1, 99408.461, 99700.838, 0.002],
+  ["T2-182", 99405.791, 99696.539, "T2", 1, 99405.790, 99696.540, 0.002],
+  ["T2-129", 99429.982, 99688.490, "T2", 1, 99429.981, 99688.491, 0.002],
+  ["T2-122", 99424.462, 99679.606, "T2", 1, 99424.461, 99679.607, 0.002],
+  ["T2-115", 99422.150, 99675.885, "T2", 1, 99422.149, 99675.886, 0.002],
+  ["T2-112", 99417.852, 99678.556, "T2", 1, 99417.851, 99678.557, 0.002],
+  ["T2-93", 99416.630, 99667.001, "T2", 1, 99416.629, 99667.002, 0.002],
+  ["T2-90", 99412.332, 99669.671, "T2", 1, 99412.331, 99669.672, 0.002],
+  ["T2-83", 99414.318, 99663.280, "T2", 1, 99414.319, 99663.281, 0.005],
+  ["T2-80", 99410.020, 99665.951, "T2", 1, 99410.021, 99665.952, 0.002],
+  ["T2-61", 99408.798, 99654.396, "T2", 1, 99408.797, 99654.397, 0.002],
+  ["T2-58", 99404.500, 99657.066, "T2", 1, 99404.499, 99657.067, 0.002],
+  ["T2-51", 99406.494, 99650.688, "T2", 1, 99406.493, 99650.689, 0.002],
+  ["T2-48", 99402.196, 99653.358, "T2", 1, 99402.195, 99653.359, 0.002],
+  ["T2-29", 99400.974, 99641.803, "T2", 1, 99400.973, 99641.804, 0.002],
+  ["T2-26", 99396.676, 99644.474, "T2", 1, 99396.675, 99644.475, 0.002],
+  ["T2-9", 99395.562, 99633.093, "T2", 1, 99395.561, 99633.094, 0.002],
+  ["T2-6", 99391.264, 99635.763, "T2", 1, 99391.263, 99635.764, 0.002],
+  ["T2-142", 99421.481, 99683.118, "T2", 1, 99421.480, 99683.119, 0.002],
+  ["T2-150", 99419.689, 99689.470, "T2", 1, 99419.688, 99689.471, 0.002],
+  ["T2-140", 99423.829, 99686.898, "T2", 1, 99423.828, 99686.899, 0.002],
+  ["T2-141", 99422.457, 99684.690, "T2", 1, 99422.456, 99684.691, 0.002],
+  ["T2-151", 99417.334, 99686.012, "T2", 1, 99417.333, 99686.013, 0.002],
+  ["T2-143", 99420.313, 99686.022, "T2", 1, 99420.312, 99686.023, 0.002],
+  ["T2-139", 99424.616, 99688.675, "T2", 1, 99424.615, 99688.676, 0.002],
+  ["T2-138", 99425.569, 99690.208, "T2", 1, 99425.568, 99690.209, 0.002],
+  ["T2-137", 99427.495, 99693.309, "T2", 1, 99427.494, 99693.310, 0.002],
+  ["T2-144", 99421.685, 99688.230, "T2", 1, 99421.684, 99688.231, 0.002],
+  ["T2-147", 99425.490, 99694.554, "T2", 1, 99425.490, 99694.554, 0.002],
+  ["T2-149", 99420.705, 99691.106, "T2", 1, 99420.705, 99691.106, 0.002],
+  ["T2-148", 99423.161, 99695.060, "T2", 1, 99423.161, 99695.060, 0.002],
+  ["T2-160", 99416.806, 99693.557, "T2", 1, 99416.806, 99693.557, 0.002],
+  ["T2-161", 99416.015, 99692.283, "T2", 1, 99416.016, 99692.284, 0.002],
+  ["T2-154", 99418.078, 99691.001, "T2", 1, 99418.078, 99691.001, 0.002],
+  ["T2-152", 99415.153, 99686.425, "T2", 1, 99415.153, 99686.425, 0.002],
+  ["T2-162", 99415.075, 99690.771, "T2", 1, 99415.075, 99690.771, 0.002],
+  ["T2-163", 99413.149, 99687.671, "T2", 1, 99413.149, 99687.671, 0.002],
+  ["T2-155", 99418.870, 99692.275, "T2", 1, 99418.869, 99692.274, 0.03],
+  ["T2-157", 99421.676, 99696.924, "T2", 1, 99421.675, 99696.923, 0.002],
+  ["T2-159", 99417.746, 99695.069, "T2", 1, 99417.745, 99695.068, 0.002],
+  ["T2-158", 99419.672, 99698.169, "T2", 1, 99419.671, 99698.168, 0.002],
+  ["T2-165", 99413.772, 99693.676, "T2", 1, 99413.772, 99693.676, 0.002],
+  ["T2-164", 99411.329, 99689.744, "T2", 1, 99411.329, 99689.744, 0.002],
+  ["T2-166", 99414.266, 99695.135, "T2", 1, 99414.266, 99695.135, 0.002],
+  ["T2-167", 99416.710, 99699.068, "T2", 1, 99416.710, 99699.068, 0.002],
+  ["T2-170", 99411.054, 99695.365, "T2", 1, 99411.054, 99695.365, 0.002],
+  ["T2-171", 99408.611, 99691.432, "T2", 1, 99408.611, 99691.432, 0.002],
+  ["T2-181", 99406.731, 99698.051, "T2", 1, 99406.731, 99698.051, 0.002],
+  ["T2-180", 99407.522, 99699.325, "T2", 1, 99407.522, 99699.325, 0.002],
+  ["T2-169", 99412.143, 99696.454, "T2", 1, 99412.143, 99696.454, 0.002],
+  ["T2-168", 99414.587, 99700.387, "T2", 1, 99414.587, 99700.387, 0.002],
+  ["T2-175", 99409.603, 99698.032, "T2", 1, 99409.603, 99698.032, 0.002],
+  ["T2-176", 99410.543, 99699.544, "T2", 1, 99410.543, 99699.544, 0.002],
+  ["T2-177", 99412.469, 99702.645, "T2", 1, 99412.469, 99702.645, 0.002],
+  ["T2-178", 99410.447, 99703.901, "T2", 1, 99410.447, 99703.901, 0.002],
+  ["T2-186", 99405.853, 99700.362, "T2", 1, 99405.853, 99700.362, 0.002],
+  ["T2-174", 99408.812, 99696.758, "T2", 1, 99408.812, 99696.758, 0.002],
+  ["T2-173", 99407.872, 99695.246, "T2", 1, 99407.871, 99695.246, 0.002],
+  ["T2-172", 99405.946, 99692.146, "T2", 1, 99405.948, 99692.146, 0.002],
+  ["T2-183", 99403.924, 99693.402, "T2", 1, 99403.924, 99693.402, 0.002],
+  ["T2-185", 99405.061, 99699.088, "T2", 1, 99405.061, 99699.088, 0.002],
+  ["T2-184", 99402.618, 99695.156, "T2", 1, 99402.618, 99695.156, 0.002],
+  ["T2-136", 99429.525, 99691.129, "T2", 1, 99429.525, 99691.129, 0.002],
+  ["T2-128", 99433.458, 99688.685, "T2", 1, 99433.458, 99688.685, 0.002],
+  ["T2-135", 99428.470, 99689.430, "T2", 1, 99428.470, 99689.430, 0.002],
+  ["T2-134", 99427.195, 99687.379, "T2", 1, 99427.195, 99687.379, 0.002],
+  ["T2-130", 99428.707, 99686.439, "T2", 1, 99428.707, 99686.439, 0.002],
+  ["T2-126", 99431.808, 99684.513, "T2", 1, 99431.808, 99684.513, 0.002],
+  ["T2-127", 99433.053, 99686.518, "T2", 1, 99433.053, 99686.518, 0.002],
+  ["T2-133", 99425.710, 99684.988, "T2", 1, 99425.710, 99684.988, 0.002],
+  ["T2-125", 99429.540, 99682.607, "T2", 1, 99429.539, 99682.605, 0.005],
+  ["T2-132", 99424.224, 99682.597, "T2", 1, 99424.222, 99682.597, 0.004],
+  ["T2-131", 99425.736, 99681.657, "T2", 1, 99425.736, 99681.657, 0.002],
+  ["T2-124", 99428.836, 99679.731, "T2", 1, 99428.836, 99679.731, 0.002],
+  ["T2-121", 99422.950, 99680.546, "T2", 1, 99422.950, 99680.546, 0.002],
+  ["T2-120", 99416.587, 99681.920, "T2", 1, 99416.587, 99681.920, 0.002],
+  ["T2-118", 99421.794, 99678.685, "T2", 1, 99421.794, 99678.685, 0.002],
+  ["T2-117", 99425.726, 99676.242, "T2", 1, 99425.726, 99676.242, 0.002],
+  ["T2-86", 99413.962, 99666.080, "T2", 1, 99413.962, 99666.080, 0.002],
+  ["T2-85", 99417.895, 99663.636, "T2", 1, 99417.895, 99663.636, 0.002],
+  ["T2-87", 99412.688, 99666.872, "T2", 1, 99412.688, 99666.872, 0.002],
+  ["T2-88", 99408.755, 99669.315, "T2", 1, 99408.755, 99669.315, 0.002],
+  ["T2-114", 99420.638, 99676.825, "T2", 1, 99420.638, 99676.825, 0.002],
+  ["T2-113", 99419.364, 99677.616, "T2", 1, 99419.364, 99677.616, 0.002],
+  ["T2-107", 99419.363, 99674.774, "T2", 1, 99419.363, 99674.774, 0.002],
+  ["T2-106", 99420.875, 99673.834, "T2", 1, 99420.875, 99673.834, 0.002],
+  ["T2-105", 99423.976, 99671.908, "T2", 1, 99423.976, 99671.908, 0.002],
+  ["T2-116", 99425.221, 99673.913, "T2", 1, 99425.220, 99673.914, 0.005],
+  ["T2-108", 99418.089, 99675.565, "T2", 1, 99418.089, 99675.565, 0.002],
+  ["T2-109", 99416.577, 99676.505, "T2", 1, 99416.577, 99676.505, 0.002],
+  ["T2-110", 99413.477, 99678.431, "T2", 1, 99413.477, 99678.431, 0.002],
+  ["T2-111", 99414.723, 99680.436, "T2", 1, 99414.723, 99680.436, 0.002],
+  ["T2-103", 99417.878, 99672.383, "T2", 1, 99417.878, 99672.383, 0.002],
+  ["T2-104", 99421.709, 99670.002, "T2", 1, 99421.709, 99670.002, 0.002],
+  ["T2-102", 99416.604, 99673.174, "T2", 1, 99416.604, 99673.174, 0.002],
+  ["T2-101", 99412.773, 99675.554, "T2", 1, 99412.773, 99675.554, 0.002],
+  ["T2-92", 99415.147, 99667.987, "T2", 1, 99415.145, 99667.986, 0.005],
+  ["T2-91", 99413.873, 99668.779, "T2", 1, 99413.872, 99668.778, 0.005],
+  ["T2-97", 99416.392, 99669.991, "T2", 1, 99416.391, 99669.990, 0.005],
+  ["T2-96", 99417.904, 99669.052, "T2", 1, 99417.905, 99669.051, 0.005],
+  ["T2-95", 99421.004, 99667.126, "T2", 1, 99421.005, 99667.125, 0.005],
+  ["T2-94", 99419.759, 99665.121, "T2", 1, 99419.758, 99665.120, 0.005],
+  ["T2-98", 99415.118, 99670.783, "T2", 1, 99415.117, 99670.782, 0.005],
+  ["T2-99", 99413.606, 99671.722, "T2", 1, 99413.605, 99671.721, 0.005],
+  ["T2-100", 99410.506, 99673.649, "T2", 1, 99410.505, 99673.648, 0.005],
+  ["T2-89", 99409.260, 99671.644, "T2", 1, 99409.261, 99671.643, 0.005],
+  ["T2-54", 99406.130, 99653.475, "T2", 1, 99406.128, 99653.474, 0.005],
+  ["T2-53", 99410.063, 99651.031, "T2", 1, 99410.062, 99651.030, 0.005],
+  ["T2-55", 99404.856, 99654.267, "T2", 1, 99404.855, 99654.266, 0.005],
+  ["T2-56", 99400.923, 99656.710, "T2", 1, 99400.922, 99656.711, 0.005],
+  ["T2-82", 99412.806, 99664.220, "T2", 1, 99412.805, 99664.221, 0.005],
+  ["T2-81", 99411.532, 99665.011, "T2", 1, 99411.533, 99665.010, 0.005],
+  ["T2-75", 99411.532, 99662.169, "T2", 1, 99411.533, 99662.168, 0.005],
+  ["T2-74", 99413.044, 99661.229, "T2", 1, 99413.045, 99661.228, 0.005],
+  ["T2-73", 99416.144, 99659.303, "T2", 1, 99416.143, 99659.302, 0.005],
+  ["T2-84", 99417.389, 99661.308, "T2", 1, 99417.388, 99661.307, 0.005],
+  ["T2-76", 99410.258, 99662.960, "T2", 1, 99410.257, 99662.959, 0.005],
+  ["T2-77", 99408.746, 99663.900, "T2", 1, 99408.745, 99663.899, 0.005],
+  ["T2-78", 99405.645, 99665.826, "T2", 1, 99405.644, 99665.825, 0.005],
+  ["T2-79", 99406.891, 99667.831, "T2", 1, 99406.890, 99667.830, 0.005],
+  ["T2-71", 99410.046, 99659.778, "T2", 1, 99410.045, 99659.777, 0.005],
+  ["T2-72", 99413.877, 99657.397, "T2", 1, 99413.876, 99657.396, 0.005],
+  ["T2-70", 99408.772, 99660.569, "T2", 1, 99408.771, 99660.568, 0.005],
+  ["T2-69", 99404.941, 99662.949, "T2", 1, 99404.940, 99662.947, 0.006],
+  ["T2-60", 99407.315, 99655.382, "T2", 1, 99407.314, 99655.381, 0.005],
+  ["T2-59", 99406.041, 99656.174, "T2", 1, 99406.040, 99656.173, 0.005],
+  ["T2-65", 99408.560, 99657.386, "T2", 1, 99408.561, 99657.387, 0.005],
+  ["T2-64", 99410.072, 99656.447, "T2", 1, 99410.071, 99656.446, 0.005],
+  ["T2-63", 99413.173, 99654.521, "T2", 1, 99413.172, 99654.520, 0.005],
+  ["T2-62", 99411.927, 99652.516, "T2", 1, 99411.926, 99652.515, 0.005],
+  ["T2-66", 99407.286, 99658.178, "T2", 1, 99407.285, 99658.177, 0.005],
+  ["T2-67", 99405.774, 99659.117, "T2", 1, 99405.773, 99659.116, 0.005],
+  ["T2-68", 99402.674, 99661.044, "T2", 1, 99402.673, 99661.043, 0.005],
+  ["T2-57", 99401.429, 99659.039, "T2", 1, 99401.428, 99659.038, 0.005],
+  ["T2-50", 99404.982, 99651.627, "T2", 1, 99404.981, 99651.626, 0.005],
+  ["T2-49", 99403.708, 99652.419, "T2", 1, 99403.707, 99652.418, 0.005],
+  ["T2-43", 99403.700, 99649.563, "T2", 1, 99403.699, 99649.562, 0.005],
+  ["T2-42", 99405.212, 99648.624, "T2", 1, 99405.211, 99648.623, 0.005],
+  ["T2-41", 99408.312, 99646.698, "T2", 1, 99408.311, 99646.697, 0.005],
+  ["T2-52", 99409.558, 99648.702, "T2", 1, 99409.557, 99648.701, 0.005],
+  ["T2-44", 99402.426, 99650.355, "T2", 1, 99402.425, 99650.354, 0.005],
+  ["T2-45", 99400.914, 99651.294, "T2", 1, 99400.913, 99651.293, 0.005],
+  ["T2-46", 99397.813, 99653.221, "T2", 1, 99397.812, 99653.220, 0.005],
+  ["T2-47", 99399.059, 99655.225, "T2", 1, 99399.058, 99655.224, 0.005],
+  ["T2-39", 99402.222, 99647.185, "T2", 1, 99402.221, 99647.184, 0.005],
+  ["T2-40", 99406.053, 99644.805, "T2", 1, 99406.052, 99644.804, 0.005],
+  ["T2-38", 99400.948, 99647.977, "T2", 1, 99400.946, 99647.806, 0.007],
+  ["T2-37", 99397.117, 99650.357, "T2", 1, 99397.118, 99650.356, 0.005],
+  ["T2-28", 99399.462, 99642.743, "T2", 1, 99399.461, 99642.742, 0.005],
+  ["T2-27", 99398.188, 99643.534, "T2", 1, 99398.187, 99643.533, 0.005],
+  ["T2-33", 99400.744, 99644.807, "T2", 1, 99400.743, 99644.806, 0.005],
+  ["T2-32", 99402.256, 99643.867, "T2", 1, 99402.255, 99643.866, 0.005],
+  ["T2-31", 99405.357, 99641.941, "T2", 1, 99405.359, 99641.940, 0.005],
+  ["T2-30", 99404.111, 99639.937, "T2", 1, 99404.111, 99639.936, 0.005],
+  ["T2-34", 99399.470, 99645.598, "T2", 1, 99399.470, 99645.598, 0.005],
+  ["T2-35", 99397.958, 99646.538, "T2", 1, 99397.958, 99646.538, 0.005],
+  ["T2-36", 99394.858, 99648.464, "T2", 1, 99394.858, 99648.464, 0.005],
+  ["T2-25", 99393.613, 99646.460, "T2", 1, 99393.614, 99646.460, 0.005],
+  ["T2-23", 99397.132, 99641.836, "T2", 1, 99397.131, 99641.835, 0.005],
+  ["T2-24", 99393.200, 99644.279, "T2", 1, 99393.199, 99644.278, 0.005],
+  ["T2-18", 99395.316, 99639.197, "T2", 1, 99395.318, 99639.196, 0.005],
+  ["T2-17", 99391.511, 99641.561, "T2", 1, 99391.510, 99641.560, 0.005],
+  ["T2-22", 99398.407, 99641.044, "T2", 1, 99398.406, 99641.043, 0.005],
+  ["T2-21", 99402.339, 99638.600, "T2", 1, 99402.339, 99638.600, 0.005],
+  ["T2-19", 99396.845, 99638.247, "T2", 1, 99396.845, 99638.247, 0.005],
+  ["T2-20", 99400.651, 99635.882, "T2", 1, 99400.651, 99635.882, 0.005],
+  ["T2-8", 99394.050, 99634.032, "T2", 1, 99394.050, 99634.032, 0.005],
+  ["T2-7", 99392.776, 99634.824, "T2", 1, 99392.776, 99634.824, 0.005],
+  ["T2-13", 99395.332, 99636.096, "T2", 1, 99395.332, 99636.096, 0.005],
+  ["T2-12", 99396.844, 99635.157, "T2", 1, 99396.844, 99635.157, 0.005],
+  ["T2-11", 99399.945, 99633.230, "T2", 1, 99399.945, 99633.230, 0.005],
+  ["T2-10", 99398.699, 99631.226, "T2", 1, 99398.699, 99631.226, 0.005],
+  ["T2-2", 99392.976, 99632.304, "T2", 1, 99392.976, 99632.304, 0.005],
+  ["T2-1", 99396.909, 99629.860, "T2", 1, 99396.909, 99629.860, 0.005],
+  ["T2-14", 99394.058, 99636.888, "T2", 1, 99394.057, 99636.888, 0.005],
+  ["T2-15", 99392.546, 99637.827, "T2", 1, 99392.546, 99637.827, 0.005],
+  ["T2-16", 99389.446, 99639.753, "T2", 1, 99389.446, 99639.753, 0.005],
+  ["T2-5", 99388.201, 99637.749, "T2", 1, 99388.201, 99637.749, 0.005],
+  ["T2-3", 99391.702, 99633.095, "T2", 1, 99391.702, 99633.095, 0.005],
+  ["T2-4", 99387.727, 99635.565, "T2", 1, 99387.729, 99635.565, 0.005],
+  ["T1-124", 99352.744, 99630.758, "T1", 1, 99352.744, 99630.758, 0.09],
+  ["T1-135", 99356.370, 99630.457, "T1", 1, 99356.366, 99630.457, 0.018],
+  ["T1-128", 99356.228, 99633.529, "T1", 1, 99356.228, 99633.529, 0.09],
+  ["T1-126", 99354.026, 99634.913, "T1", 1, 99354.026, 99634.913, 0.09],
+  ["T1-136", 99358.634, 99634.999, "T1", 1, 99358.634, 99634.999, 0.09],
+  ["T1-129", 99354.884, 99631.391, "T1", 1, 99354.884, 99631.391, 0.09],
+  ["T1-127", 99355.370, 99637.050, "T1", 1, 99355.370, 99637.050, 0.09],
+  ["T1-125", 99352.683, 99632.775, "T1", 1, 99352.683, 99632.775, 0.09],
+  ["T1-130", 99354.742, 99629.502, "T1", 1, 99354.742, 99629.502, 0.09],
+  ["T1-131", 99351.839, 99624.884, "T1", 1, 99351.839, 99624.884, 0.09],
+  ["T1-123", 99351.850, 99629.336, "T1", 1, 99351.850, 99629.336, 0.09],
+  ["T1-122", 99349.989, 99626.047, "T1", 1, 99349.989, 99626.047, 0.09],
+  ["T1-133", 99356.642, 99628.307, "T1", 1, 99356.642, 99628.307, 0.09],
+  ["T1-132", 99354.138, 99624.324, "T1", 1, 99354.138, 99624.324, 0.09],
+  ["T1-134", 99357.414, 99629.535, "T1", 1, 99357.414, 99629.535, 0.09],
+  ["T1-137", 99360.062, 99633.747, "T1", 1, 99360.063, 99633.747, 0.09],
+  ["T1-150", 99362.924, 99624.359, "T1", 1, 99362.926, 99624.358, 0.09],
+  ["T1-151", 99360.420, 99620.375, "T1", 1, 99360.420, 99620.375, 0.09],
+  ["T1-149", 99363.696, 99625.586, "T1", 1, 99363.696, 99625.586, 0.09],
+  ["T1-148", 99366.200, 99629.570, "T1", 1, 99366.200, 99629.570, 0.09],
+  ["T1-144", 99360.541, 99625.857, "T1", 1, 99360.543, 99625.857, 0.09],
+  ["T1-145", 99361.313, 99627.084, "T1", 1, 99361.313, 99627.084, 0.09],
+  ["T1-139", 99359.315, 99628.340, "T1", 1, 99359.315, 99628.340, 0.09],
+  ["T1-138", 99362.218, 99632.959, "T1", 1, 99362.218, 99632.959, 0.09],
+  ["T1-146", 99362.207, 99628.507, "T1", 1, 99362.207, 99628.507, 0.09],
+  ["T1-147", 99364.216, 99631.703, "T1", 1, 99364.216, 99631.703, 0.09],
+  ["T1-140", 99358.543, 99627.113, "T1", 1, 99358.543, 99627.113, 0.09],
+  ["T1-141", 99355.640, 99622.494, "T1", 1, 99355.640, 99622.494, 0.09],
+  ["T1-143", 99359.647, 99624.434, "T1", 1, 99359.647, 99624.434, 0.09],
+  ["T1-142", 99357.638, 99621.238, "T1", 1, 99357.638, 99621.238, 0.09],
+  ["T1-154", 99365.308, 99622.860, "T1", 1, 99365.308, 99622.860, 0.09],
+  ["T1-155", 99366.079, 99624.088, "T1", 1, 99366.079, 99624.088, 0.09],
+  ["T1-159", 99368.077, 99622.832, "T1", 1, 99368.077, 99622.832, 0.09],
+  ["T1-158", 99370.980, 99627.450, "T1", 1, 99370.980, 99627.450, 0.09],
+  ["T1-156", 99366.973, 99625.510, "T1", 1, 99366.973, 99625.510, 0.09],
+  ["T1-157", 99368.982, 99628.706, "T1", 1, 99368.982, 99628.706, 0.09],
+  ["T1-160", 99367.306, 99621.604, "T1", 1, 99367.306, 99621.604, 0.09],
+  ["T1-161", 99364.403, 99616.986, "T1", 1, 99364.403, 99616.986, 0.09],
+  ["T1-153", 99364.413, 99621.438, "T1", 1, 99364.413, 99621.438, 0.09],
+  ["T1-152", 99362.404, 99618.242, "T1", 1, 99362.404, 99618.242, 0.09],
+  ["T1-172", 99373.105, 99617.959, "T1", 1, 99373.091, 99617.987, 0.018],
+  ["T1-173", 99373.877, 99619.187, "T1", 1, 99373.839, 99619.093, 0.018],
+  ["T1-167", 99371.879, 99620.443, "T1", 1, 99371.838, 99620.408, 0.018],
+  ["T1-166", 99374.782, 99625.061, "T1", 1, 99374.784, 99625.029, 0.019],
+  ["T1-174", 99374.771, 99620.609, "T1", 1, 99374.814, 99620.615, 0.018],
+  ["T1-175", 99376.780, 99623.805, "T1", 1, 99376.803, 99623.786, 0.018],
+  ["T1-168", 99371.107, 99619.215, "T1", 1, 99371.154, 99619.205, 0.018],
+  ["T1-169", 99368.204, 99614.597, "T1", 1, 99368.063, 99614.589, 0.018],
+  ["T1-171", 99372.211, 99616.537, "T1", 1, 99372.309, 99616.571, 0.018],
+  ["T1-170", 99370.202, 99613.341, "T1", 1, 99370.300, 99613.353, 0.019],
+  ["T1-163", 99369.206, 99620.410, "T1", 1, 99369.243, 99620.377, 0.018],
+  ["T1-162", 99366.702, 99616.426, "T1", 1, 99366.702, 99616.426, 0.09],
+  ["T1-164", 99369.978, 99621.637, "T1", 1, 99369.978, 99621.637, 0.09],
+  ["T1-165", 99372.482, 99625.621, "T1", 1, 99372.482, 99625.621, 0.09],
+  ["T1-177", 99376.094, 99617.763, "T1", 1, 99376.237, 99617.705, 0.018],
+  ["T1-176", 99378.586, 99621.784, "T1", 1, 99378.608, 99621.827, 0.018],
+  ["T1-178", 99375.536, 99616.431, "T1", 1, 99375.565, 99616.500, 0.018],
+  ["T1-179", 99373.060, 99612.430, "T1", 1, 99373.071, 99612.428, 0.018],
+  ["T1-182", 99378.791, 99616.097, "T1", 1, 99378.739, 99616.034, 0.018],
+  ["T1-183", 99381.295, 99620.081, "T1", 1, 99381.258, 99620.007, 0.018],
+  ["T1-192", 99382.995, 99613.455, "T1", 1, 99382.941, 99613.425, 0.017],
+  ["T1-191", 99382.223, 99612.228, "T1", 1, 99382.223, 99612.154, 0.017],
+  ["T1-181", 99377.794, 99615.012, "T1", 1, 99377.908, 99615.058, 0.018],
+  ["T1-180", 99375.262, 99611.046, "T1", 1, 99375.274, 99610.907, 0.015],
+  ["T1-187", 99380.225, 99613.483, "T1", 1, 99380.177, 99613.515, 0.018],
+  ["T1-188", 99379.267, 99611.959, "T1", 1, 99379.318, 99611.984, 0.018],
+  ["T1-189", 99377.322, 99608.865, "T1", 1, 99377.303, 99608.811, 0.017],
+  ["T1-190", 99379.320, 99607.609, "T1", 1, 99379.386, 99607.681, 0.017],
+  ["T1-196", 99383.946, 99611.145, "T1", 1, 99383.909, 99611.190, 0.017],
+  ["T1-197", 99381.442, 99607.161, "T1", 1, 99381.256, 99607.106, 0.018],
+  ["T1-186", 99380.997, 99614.711, "T1", 1, 99380.943, 99614.661, 0.018],
+  ["T1-185", 99381.955, 99616.235, "T1", 1, 99381.945, 99616.184, 0.018],
+  ["T1-184", 99383.900, 99619.329, "T1", 1, 99383.925, 99619.444, 0.018],
+  ["T1-193", 99385.898, 99618.073, "T1", 1, 99385.923, 99618.098, 0.017],
+  ["T1-195", 99384.718, 99612.372, "T1", 1, 99384.647, 99612.491, 0.018],
+  ["T1-194", 99387.222, 99616.355, "T1", 1, 99387.246, 99616.294, 0.017],
+  ["T1-121", 99347.843, 99628.317, "T1", 1, 99347.843, 99628.317, 0.09],
+  ["T1-114", 99343.859, 99630.821, "T1", 1, 99343.859, 99630.821, 0.09],
+  ["T1-120", 99348.936, 99630.057, "T1", 1, 99348.936, 99630.057, 0.09],
+  ["T1-119", 99350.192, 99632.055, "T1", 1, 99350.192, 99632.055, 0.09],
+  ["T1-115", 99348.668, 99633.013, "T1", 1, 99348.668, 99633.013, 0.09],
+  ["T1-112", 99345.574, 99634.958, "T1", 1, 99345.574, 99634.958, 0.09],
+  ["T1-113", 99344.318, 99632.960, "T1", 1, 99344.318, 99632.960, 0.09],
+  ["T1-118", 99351.690, 99634.438, "T1", 1, 99351.690, 99634.438, 0.09],
+  ["T1-111", 99347.809, 99636.878, "T1", 1, 99347.809, 99636.878, 0.09],
+  ["T1-107", 99354.445, 99638.819, "T1", 1, 99354.445, 99638.819, 0.09],
+  ["T1-117", 99353.189, 99636.821, "T1", 1, 99353.189, 99636.821, 0.09],
+  ["T1-116", 99351.665, 99637.779, "T1", 1, 99351.665, 99637.779, 0.09],
+  ["T1-110", 99348.570, 99639.724, "T1", 1, 99348.570, 99639.724, 0.09],
+  ["T1-108", 99352.921, 99639.777, "T1", 1, 99352.921, 99639.777, 0.09],
+  ["T1-109", 99349.826, 99641.722, "T1", 1, 99349.826, 99641.722, 0.09],
+  ["T1-105", 99356.867, 99639.948, "T1", 1, 99356.867, 99639.948, 0.09],
+  ["T1-106", 99360.850, 99637.445, "T1", 1, 99360.850, 99637.445, 0.09],
+  ["T1-104", 99355.639, 99640.720, "T1", 1, 99355.639, 99640.720, 0.09],
+  ["T1-103", 99351.656, 99643.224, "T1", 1, 99351.656, 99643.224, 0.09],
+  ["T1-76", 99363.537, 99653.284, "T1", 1, 99363.537, 99653.284, 0.09],
+  ["T1-75", 99359.554, 99655.788, "T1", 1, 99359.554, 99655.788, 0.09],
+  ["T1-77", 99364.764, 99652.512, "T1", 1, 99364.763, 99652.507, 0.018],
+  ["T1-78", 99368.748, 99650.008, "T1", 1, 99368.748, 99650.008, 0.09],
+  ["T1-101", 99356.834, 99642.621, "T1", 1, 99356.834, 99642.621, 0.09],
+  ["T1-100", 99358.062, 99641.849, "T1", 1, 99358.062, 99641.849, 0.09],
+  ["T1-95", 99358.090, 99644.619, "T1", 1, 99358.091, 99644.619, 0.09],
+  ["T1-94", 99356.566, 99645.577, "T1", 1, 99356.566, 99645.577, 0.09],
+  ["T1-93", 99353.472, 99647.522, "T1", 1, 99353.472, 99647.522, 0.09],
+  ["T1-102", 99352.216, 99645.524, "T1", 1, 99352.216, 99645.524, 0.09],
+  ["T1-96", 99359.318, 99643.847, "T1", 1, 99359.320, 99643.847, 0.09],
+  ["T1-97", 99360.842, 99642.889, "T1", 1, 99360.842, 99642.889, 0.09],
+  ["T1-98", 99363.936, 99640.944, "T1", 1, 99363.367, 99640.945, 0.09],
+  ["T1-99", 99362.680, 99638.946, "T1", 1, 99362.682, 99638.946, 0.09],
+  ["T1-91", 99359.588, 99647.002, "T1", 1, 99359.589, 99647.002, 0.09],
+  ["T1-92", 99355.706, 99649.442, "T1", 1, 99355.706, 99649.442, 0.09],
+  ["T1-90", 99360.816, 99646.230, "T1", 1, 99360.816, 99646.230, 0.09],
+  ["T1-89", 99364.697, 99643.790, "T1", 1, 99364.697, 99643.790, 0.09],
+  ["T1-81", 99362.342, 99651.383, "T1", 1, 99362.343, 99651.383, 0.09],
+  ["T1-80", 99363.570, 99650.612, "T1", 1, 99363.570, 99650.612, 0.09],
+  ["T1-85", 99361.086, 99649.385, "T1", 1, 99361.086, 99649.385, 0.09],
+  ["T1-84", 99359.562, 99650.343, "T1", 1, 99359.562, 99650.343, 0.09],
+  ["T1-83", 99356.468, 99652.288, "T1", 1, 99356.468, 99652.288, 0.09],
+  ["T1-82", 99357.724, 99654.286, "T1", 1, 99357.724, 99654.286, 0.09],
+  ["T1-86", 99362.314, 99648.614, "T1", 1, 99362.314, 99648.614, 0.09],
+  ["T1-87", 99363.838, 99647.656, "T1", 1, 99363.838, 99647.656, 0.09],
+  ["T1-88", 99366.932, 99645.711, "T1", 1, 99366.932, 99645.711, 0.09],
+  ["T1-79", 99368.188, 99647.709, "T1", 1, 99368.188, 99647.709, 0.09],
+  ["T1-48", 99371.435, 99665.848, "T1", 1, 99371.435, 99665.848, 0.09],
+  ["T1-47", 99367.451, 99668.352, "T1", 1, 99367.451, 99668.352, 0.09],
+  ["T1-49", 99372.662, 99665.076, "T1", 1, 99372.662, 99665.076, 0.09],
+  ["T1-50", 99376.646, 99662.572, "T1", 1, 99376.646, 99662.572, 0.09],
+  ["T1-73", 99364.732, 99655.185, "T1", 1, 99364.732, 99655.185, 0.09],
+  ["T1-72", 99365.959, 99654.413, "T1", 1, 99365.959, 99654.413, 0.09],
+  ["T1-67", 99365.988, 99657.183, "T1", 1, 99365.988, 99657.183, 0.09],
+  ["T1-66", 99364.464, 99658.141, "T1", 1, 99364.464, 99658.141, 0.09],
+  ["T1-65", 99361.369, 99660.086, "T1", 1, 99361.369, 99660.086, 0.09],
+  ["T1-74", 99360.113, 99658.088, "T1", 1, 99360.113, 99658.088, 0.09],
+  ["T1-68", 99367.215, 99656.411, "T1", 0, null, null, null],
+  ["T1-69", 99368.739, 99655.453, "T1", 0, null, null, null],
+  ["T1-70", 99371.834, 99653.508, "T1", 1, 99371.835, 99653.507, 0.1],
+  ["T1-71", 99370.578, 99651.510, "T1", 1, 99370.578, 99651.510, 0.09],
+  ["T1-63", 99367.486, 99659.566, "T1", 1, 99367.486, 99659.566, 0.09],
+  ["T1-64", 99363.604, 99662.006, "T1", 1, 99363.604, 99662.006, 0.09],
+  ["T1-62", 99368.713, 99658.794, "T1", 1, 99368.713, 99658.794, 0.09],
+  ["T1-61", 99372.595, 99656.354, "T1", 1, 99372.595, 99656.354, 0.09],
+  ["T1-53", 99370.240, 99663.947, "T1", 1, 99370.240, 99663.947, 0.09],
+  ["T1-52", 99371.467, 99663.176, "T1", 0, null, null, null],
+  ["T1-57", 99368.984, 99661.949, "T1", 1, 99368.984, 99661.949, 0.09],
+  ["T1-56", 99367.460, 99662.907, "T1", 1, 99367.460, 99662.907, 0.09],
+  ["T1-55", 99364.366, 99664.852, "T1", 1, 99364.366, 99664.852, 0.09],
+  ["T1-54", 99365.622, 99666.850, "T1", 1, 99365.622, 99666.850, 0.09],
+  ["T1-58", 99370.212, 99661.178, "T1", 0, null, null, null],
+  ["T1-59", 99371.735, 99660.220, "T1", 0, null, null, null],
+  ["T1-60", 99374.830, 99658.274, "T1", 1, 99374.830, 99658.274, 0.09],
+  ["T1-51", 99376.086, 99660.273, "T1", 1, 99376.086, 99660.273, 0.09],
+  ["T1-45", 99372.629, 99667.749, "T1", 1, 99372.629, 99667.749, 0.09],
+  ["T1-44", 99373.857, 99666.977, "T1", 0, null, null, null],
+  ["T1-39", 99373.885, 99669.747, "T1", 1, 99373.885, 99669.747, 0.09],
+  ["T1-38", 99372.361, 99670.705, "T1", 1, 99372.361, 99670.705, 0.09],
+  ["T1-37", 99369.267, 99672.650, "T1", 1, 99369.268, 99672.650, 0.09],
+  ["T1-46", 99368.011, 99670.652, "T1", 1, 99368.011, 99670.652, 0.09],
+  ["T1-40", 99375.113, 99668.975, "T1", 0, null, null, null],
+  ["T1-41", 99376.637, 99668.017, "T1", 0, null, null, null],
+  ["T1-42", 99379.731, 99666.072, "T1", 1, 99379.731, 99666.072, 0.09],
+  ["T1-43", 99378.475, 99664.074, "T1", 1, 99378.475, 99664.074, 0.09],
+  ["T1-35", 99375.383, 99672.130, "T1", 1, 99375.385, 99672.130, 0.09],
+  ["T1-36", 99371.502, 99674.570, "T1", 1, 99371.501, 99674.571, 0.09],
+  ["T1-34", 99376.611, 99671.358, "T1", 1, 99376.611, 99671.358, 0.09],
+  ["T1-33", 99380.493, 99668.918, "T1", 1, 99380.493, 99668.918, 0.09],
+  ["T1-25", 99378.138, 99676.511, "T1", 0, null, null, null],
+  ["T1-24", 99379.365, 99675.740, "T1", 0, null, null, null],
+  ["T1-29", 99376.882, 99674.513, "T1", 1, 99376.882, 99674.513, 0.09],
+  ["T1-28", 99375.358, 99675.471, "T1", 1, 99375.359, 99675.471, 0.09],
+  ["T1-27", 99372.263, 99677.416, "T1", 1, 99372.263, 99677.416, 0.09],
+  ["T1-26", 99373.519, 99679.414, "T1", 1, 99373.519, 99679.414, 0.09],
+  ["T1-30", 99378.109, 99673.741, "T1", 0, null, null, null],
+  ["T1-31", 99379.633, 99672.784, "T1", 0, null, null, null],
+  ["T1-32", 99382.727, 99670.838, "T1", 1, 99382.727, 99670.838, 0.09],
+  ["T1-23", 99383.983, 99672.836, "T1", 1, 99383.983, 99672.836, 0.09],
+  ["T1-21", 99380.459, 99677.479, "T1", 1, 99380.459, 99677.479, 0.09],
+  ["T1-22", 99384.442, 99674.975, "T1", 1, 99384.442, 99674.975, 0.09],
+  ["T1-16", 99382.225, 99680.149, "T1", 0, null, null, null],
+  ["T1-15", 99386.145, 99677.685, "T1", 0, null, null, null],
+  ["T1-20", 99379.417, 99678.547, "T1", 1, 99379.417, 99678.547, 0.09],
+  ["T1-19", 99375.434, 99681.051, "T1", 1, 99375.434, 99681.051, 0.09],
+  ["T1-17", 99380.769, 99680.651, "T1", 1, 99380.769, 99680.651, 0.09],
+  ["T1-18", 99376.765, 99683.168, "T1", 1, 99376.765, 99683.168, 0.09],
+  ["T1-7", 99383.587, 99685.181, "T1", 0, null, null, null],
+  ["T1-6", 99384.815, 99684.409, "T1", 0, null, null, null],
+  ["T1-11", 99382.331, 99683.183, "T1", 0, null, null, null],
+  ["T1-10", 99380.807, 99684.141, "T1", 0, null, null, null],
+  ["T1-9", 99377.713, 99686.086, "T1", 0, null, null, null],
+  ["T1-8", 99378.969, 99688.084, "T1", 0, null, null, null],
+  ["T1-2", 99384.707, 99686.963, "T1", 0, null, null, null],
+  ["T1-1", 99380.724, 99689.467, "T1", 1, 99380.724, 99689.467, 0.09],
+  ["T1-12", 99383.559, 99682.411, "T1", 0, null, null, null],
+  ["T1-13", 99385.083, 99681.453, "T1", 0, null, null, null],
+  ["T1-14", 99388.177, 99679.508, "T1", 0, null, null, null],
+  ["T1-5", 99389.433, 99681.506, "T1", 0, null, null, null],
+  ["T1-3", 99385.935, 99686.191, "T1", 0, null, null, null],
+  ["T1-4", 99389.893, 99683.703, "T1", 0, null, null, null],
+];
+
+  function toggleSide(){
+
+    document
+    .querySelector(".side")
+    .classList.toggle("open");
+
+}
+function toggleProjects(){
+
+ document
+ .querySelector(".side")
+ ?.classList.toggle("open");
+
+}
+const M_NY = {"n": 384, "done": 0, "pending": 384, "minx": 99343.859, "maxx": 99433.458, "miny": 99607.161, "maxy": 99704.295, "diam": 0.6, "t1": 197, "t2": 187, "avgdev": 0.0, "maxdev": 0.0, "tol_ok": 0, "tol_warn": 0, "tol_bad": 0, "tol": 5.0};
+
+
+let viewStyle='plan', filter='all', selId=null, devMag=1;
+
+// === Proyectos (cada obra es un proyecto; las torres se aíslan dentro) ===
+const PROJECTS=[
+  {id:'bcn', name:'Pilotes Barcelona', client:'PILOTES_BARCELONA.dwg', piles:P_BAR, meta:M_BAR},
+  {id:'ny', name:'Pilotes NuevaYork', client:'PILOTES_NUEVA_YORK.dwg', piles:P_NY, meta:M_NY},
+];
+PROJECTS.forEach(p=>{p.meta=computeMeta(p.piles,p.meta||{});});
+let activeProj=null;
+let PILES=[], META={};
+let measureMode=false, measA=null, measB=null, towerFilter='all';
+
+// Casco convexo (monotone chain) sobre puntos {x,y} en metros
+function convexHull(pts){
+  if(pts.length<3) return pts.slice();
+  const p=pts.slice().sort((a,b)=>a.x-b.x||a.y-b.y);
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const lo=[],up=[];
+  for(const q of p){while(lo.length>=2&&cross(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q);}
+  for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>=2&&cross(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q);}
+  lo.pop();up.pop();return lo.concat(up);
+}
+function shoelace(ring){let a=0;for(let i=0;i<ring.length;i++){const j=(i+1)%ring.length;a+=ring[i].x*ring[j].y-ring[j].x*ring[i].y;}return Math.abs(a/2);}
+const cv=document.getElementById('map'),ctx=cv.getContext('2d'),tipEl=document.getElementById('tip');
+let DPR=Math.max(1,window.devicePixelRatio||1);
+let cam={zoom:1,ox:0,oy:0},drag=null,W=0,H=0,baseScale=1;
+let cx0=0, cy0=0;
+const TOWERC={T1:'#ff7a2f',T2:'#3ad6c7'};
+const fmt=(n,d=2)=>n.toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d});
+// índices: 0 id,1 x,2 y,3 tower,4 status,5 ax,6 ay,7 devcm
+function devColor(dev){return dev<=5?'#5fd97a':dev<=10?'#ffcf4a':'#ff5c6c';}
+function statusOf(p){if(!p[4])return'pend';const d=p[7];return d<=5?'ok':d<=10?'warn':'bad';}
+
+function computeMeta(piles, baseMeta={tol:5.0,diam:0.6}){
+  const n=piles.length;
+  let done=0, tol_ok=0, tol_warn=0, tol_bad=0, sumdev=0, maxdev=0;
+  let minx=Infinity,maxx=-Infinity,miny=Infinity,maxy=-Infinity,t1=0,t2=0;
+  for(const p of piles){
+    const x=p[1], y=p[2];
+    minx=Math.min(minx,x); maxx=Math.max(maxx,x); miny=Math.min(miny,y); maxy=Math.max(maxy,y);
+    if(p[3]==='T1') t1++;
+    if(p[3]==='T2') t2++;
+    // Si no hay replanteado, no computar desviación
+    if(!p[4]) continue;
+    done++;
+    // Normalizar desviación a centímetros a partir de coordenadas cuando estén disponibles
+    let d = 0;
+    if(typeof p[5]==='number' && typeof p[6]==='number'){
+      const de = (p[5]-p[1])*100; // cm
+      const dn = (p[6]-p[2])*100; // cm
+      d = Math.hypot(de,dn);
+      // Actualizar p[7] con la desviación normalizada en cm
+      p[7] = Number(d);
+    } else {
+      // Fallback: si p[7] existe, intentar inferir unidad
+      const raw = Number(p[7]) || 0;
+      // Si el valor es pequeño (<=3) es muy probable que sea metros -> convertir a cm
+      // Si es mayor, asumir ya está en cm
+      d = raw > 3 ? raw : raw * 100;
+      p[7] = d;
+    }
+    sumdev += d;
+    maxdev = Math.max(maxdev,d);
+    if(d<=baseMeta.tol) tol_ok++;
+    else if(d<=10) tol_warn++;
+    else tol_bad++;
+  }
+  return {
+    ...baseMeta,
+    n,
+    done,
+    pending:n-done,
+    minx:isFinite(minx)?minx:0,
+    maxx:isFinite(maxx)?maxx:0,
+    miny:isFinite(miny)?miny:0,
+    maxy:isFinite(maxy)?maxy:0,
+    diam:baseMeta.diam||0.6,
+    t1,
+    t2,
+    tol_ok,
+    tol_warn,
+    tol_bad,
+    avgdev: done? sumdev/done : 0,
+    maxdev,
+  };
+}
+
+function world(x,y){const s=baseScale*cam.zoom;return{x:W/2+(x-cx0)*s+cam.ox,y:H/2-(y-cy0)*s+cam.oy};}
+function resize(){const r=cv.parentElement.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+function fitView(){const sx=Math.max(META.maxx-META.minx,5),sy=Math.max(META.maxy-META.miny,5),pad=70;baseScale=Math.min((W-pad*2)/sx,(H-pad*2)/sy);cam={zoom:1,ox:0,oy:0};draw();}
+function zoomBy(f){cam.zoom*=f;cam.ox*=f;cam.oy*=f;draw();}
+
+function bg(){
+  let top,bot;
+  if(viewStyle==='terr'){top='#1a2417';bot='#0e1410';}else if(viewStyle==='topo'){top='#10171f';bot='#0b1016';}else{top='#0e141c';bot='#0a0e14';}
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,top);g.addColorStop(1,bot);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(viewStyle==='terr'){const bl=[['#243018',.5,.35,.4],['#2c2a16',.4,.6,.6],['#1c2a22',.4,.7,.3]];bl.forEach((b,i)=>{ctx.globalAlpha=b[1];ctx.fillStyle=b[0];ctx.beginPath();ctx.ellipse(W*b[2],H*b[3],Math.min(W,H)*(.3+.06*i),Math.min(W,H)*(.22+.05*i),i,0,7);ctx.fill();});ctx.globalAlpha=1;}
+  const s=baseScale*cam.zoom,raw=70/s,pow=Math.pow(10,Math.floor(Math.log10(raw))),mult=[1,2,5,10].find(m=>pow*m>=raw)||10,step=pow*mult,px=step*s;
+  ctx.strokeStyle=viewStyle==='topo'?'rgba(58,214,199,.07)':'rgba(120,140,165,.07)';ctx.lineWidth=1;
+  const o0=world(cx0,cy0),ox=((o0.x)%px+px)%px,oy=((o0.y)%px+px)%px;
+  ctx.beginPath();for(let x=ox;x<W;x+=px){ctx.moveTo(x,0);ctx.lineTo(x,H);}for(let y=oy;y<H;y+=px){ctx.moveTo(0,y);ctx.lineTo(W,y);}ctx.stroke();
+  return step;
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);const step=bg();
+  const s=baseScale*cam.zoom, rad=Math.max(2.4,(META.diam/2)*s);
+  const showD=document.getElementById('lyDesign').checked, showB=document.getElementById('lyBuilt').checked, showV=document.getElementById('lyVec').checked;
+  PILES.forEach(p=>{
+    if(filterHide(p))return;
+    const d=world(p[1],p[2]);
+    // diseño: anillo punteado
+    if(showD){ctx.beginPath();ctx.arc(d.x,d.y,rad,0,7);ctx.setLineDash([3,3]);ctx.lineWidth=1.3;ctx.strokeStyle='rgba(139,151,168,.7)';ctx.stroke();ctx.setLineDash([]);}
+    if(p[4] && showB){
+      // posición visual del replanteado, exagerada ×devMag desde el diseño
+      const bx=p[1]+(p[5]-p[1])*devMag, by=p[2]+(p[6]-p[2])*devMag;
+      const b=world(bx,by); const col=devColor(p[7]);
+      if(showV){ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=devMag>1?1.6:1.2;ctx.stroke();}
+      ctx.beginPath();ctx.arc(b.x,b.y,Math.max(2.6,rad*.75),0,7);ctx.fillStyle=col;ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='#0c1016';ctx.stroke();
+    }
+    if(rad>11){ctx.fillStyle='rgba(232,237,244,.5)';ctx.font='600 8px IBM Plex Mono';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(p[0],d.x,d.y-rad-2);}
+  });
+  if(selId){const p=PILES.find(x=>x[0]===selId);if(p){const d=world(p[1],p[2]);ctx.beginPath();ctx.arc(d.x,d.y,Math.max(rad+5,9),0,7);ctx.lineWidth=2.5;ctx.strokeStyle='#fff';ctx.stroke();}}
+  // Huella / área por torre (casco convexo)
+  if(document.getElementById('lyHull').checked){
+    ['T1','T2'].forEach(tw=>{
+      const pts=PILES.filter(p=>p[3]===tw).map(p=>({x:p[1],y:p[2]}));
+      const hull=convexHull(pts); if(hull.length<3)return;
+      const col=tw==='T1'?'#ff7a2f':'#3ad6c7';
+      ctx.beginPath();hull.forEach((h,i)=>{const s=world(h.x,h.y);i?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y);});ctx.closePath();
+      ctx.fillStyle=hexA(col,.08);ctx.fill();
+      ctx.setLineDash([6,4]);ctx.strokeStyle=hexA(col,.7);ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
+      // etiqueta de área en el centroide
+      const cxv=hull.reduce((s,h)=>s+h.x,0)/hull.length, cyv=hull.reduce((s,h)=>s+h.y,0)/hull.length;
+      const area=shoelace(hull), c=world(cxv,cyv);
+      const lab=`${tw}: ${fmt(area,0)} m²`;ctx.font='700 11px IBM Plex Mono';const w=ctx.measureText(lab).width+12;
+      ctx.fillStyle='rgba(12,16,22,.8)';rr(c.x-w/2,c.y-9,w,18,5);ctx.fill();
+      ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lab,c.x,c.y);
+    });
+  }
+  // Línea de medición entre dos pilotes
+  if(measA){
+    const a=PILES.find(x=>x[0]===measA); const sa=world(a[1],a[2]);
+    ctx.beginPath();ctx.arc(sa.x,sa.y,7,0,7);ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+    if(measB){
+      const b=PILES.find(x=>x[0]===measB); const sb=world(b[1],b[2]);
+      const dist=Math.hypot(b[1]-a[1],b[2]-a[2]);
+      ctx.beginPath();ctx.arc(sb.x,sb.y,7,0,7);ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+      ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.strokeStyle='#fff';ctx.lineWidth=1.8;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+      const mx=(sa.x+sb.x)/2,my=(sa.y+sb.y)/2,lab=fmt(dist,3)+' m';
+      ctx.font='700 12px IBM Plex Mono';const w=ctx.measureText(lab).width+14;
+      ctx.fillStyle='rgba(12,16,22,.9)';rr(mx-w/2,my-11,w,22,6);ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1;rr(mx-w/2,my-11,w,22,6);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lab,mx,my);
+    }
+  }
+  north();scale(step);
+  if(devMag>1){
+    ctx.fillStyle='rgba(255,122,47,.16)';ctx.strokeStyle='var(--amber)';
+    const txt='⚠ Desvíos exagerados ×'+devMag+' (visual)';ctx.font='600 11px IBM Plex Mono';
+    const w=ctx.measureText(txt).width+18;rr(W/2-w/2,12,w,24,7);ctx.fillStyle='rgba(255,122,47,.16)';ctx.fill();
+    ctx.strokeStyle='#ff7a2f';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle='#ffb37a';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,W/2,24);
+  }
+}
+function filterHide(p){
+  if(towerFilter!=='all' && p[3]!==towerFilter)return true;
+  if(filter==='pend' && p[4])return true;
+  if(filter==='done' && !p[4])return true;
+  if(filter==='bad' && !(p[4] && p[7]>10))return true;
+  return false;
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function north(){const x=W-44,y=H-58;ctx.save();ctx.translate(x,y);ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(7,8);ctx.lineTo(0,2);ctx.lineTo(-7,8);ctx.closePath();ctx.fillStyle='#ff7a2f';ctx.fill();ctx.fillStyle='#e8edf4';ctx.font='700 12px Archivo';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('N',0,10);ctx.restore();}
+function scale(step){const s=baseScale*cam.zoom,px=step*s,x=20,y=H-30;ctx.strokeStyle='#e8edf4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+px,y);ctx.moveTo(x,y-5);ctx.lineTo(x,y+5);ctx.moveTo(x+px,y-5);ctx.lineTo(x+px,y+5);ctx.stroke();ctx.fillStyle='#e8edf4';ctx.font='600 11px IBM Plex Mono';ctx.textAlign='left';ctx.textBaseline='bottom';ctx.fillText(fmt(step,0)+' m',x,y-8);}
+
+function hexA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+function pickPile(mx,my){let hit=null,bd=14;PILES.forEach(p=>{if(filterHide(p))return;const d=world(p[1],p[2]);const dd=Math.hypot(d.x-mx,d.y-my);if(dd<bd){bd=dd;hit=p;}});return hit;}
+function toggleMeasure(){measureMode=!measureMode;measA=measB=null;document.getElementById('measBtn').classList.toggle('active',measureMode);const o=document.getElementById('measOut');o.style.display=measureMode?'block':'none';o.textContent=measureMode?'Clic en el primer pilote…':'';cv.style.cursor=measureMode?'crosshair':'grab';draw();}
+
+cv.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY,ox:cam.ox,oy:cam.oy,moved:false};});
+window.addEventListener('mouseup',e=>{
+  const wasClick = drag && !drag.moved;
+  drag=null;
+  if(wasClick && measureMode){
+    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+    const p=pickPile(mx,my); if(!p)return;
+    const o=document.getElementById('measOut');
+    if(!measA||measB){measA=p[0];measB=null;o.textContent=`A: ${p[0]} · clic en el segundo…`;}
+    else if(p[0]!==measA){measB=p[0];const a=PILES.find(x=>x[0]===measA);const dist=Math.hypot(p[1]-a[1],p[2]-a[2]);o.textContent=`${measA} → ${measB} = ${fmt(dist,3)} m`;}
+    draw();
+  } else if(wasClick && !measureMode){
+    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+    const p=pickPile(mx,my);
+    if(p){selId=p[0];openDetail(p[0]);renderList();draw();}
+  }
+});
+window.addEventListener('mousemove',e=>{
+  if(drag){if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>4)drag.moved=true;cam.ox=drag.ox+(e.clientX-drag.x);cam.oy=drag.oy+(e.clientY-drag.y);draw();return;}
+  const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;let hit=null,bd=12;
+  PILES.forEach(p=>{if(filterHide(p))return;const d=world(p[1],p[2]);const dd=Math.hypot(d.x-mx,d.y-my);if(dd<bd){bd=dd;hit=p;}});
+  if(hit){
+    const st=statusOf(hit);
+    const stTxt=st==='pend'?'Pendiente':st==='ok'?'En tolerancia':st==='warn'?'Revisar':'Fuera de tolerancia';
+    let extra = hit[4] ? `<br><span>Desvío: ${fmt(hit[7],1)} cm</span><br><span>As-built E:${fmt(hit[5],3)} N:${fmt(hit[6],3)}</span>` : '<br><span>Sin capturar</span>';
+    tipEl.innerHTML=`<b>${hit[0]}</b> · Torre ${hit[3].slice(1)}<br><span>${stTxt}</span><br><span>Diseño E:${fmt(hit[1],3)} N:${fmt(hit[2],3)}</span>${extra}`;
+    tipEl.style.left=Math.min(mx+14,W-200)+'px';tipEl.style.top=(my+14)+'px';tipEl.style.opacity=1;
+  } else tipEl.style.opacity=0;
+});
+cv.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.12:.89;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left-W/2,my=e.clientY-r.top-H/2;cam.ox=mx-(mx-cam.ox)*f;cam.oy=my-(my-cam.oy)*f;cam.zoom*=f;draw();},{passive:false});
+
+function renderStats(){
+  const pct=Math.round(100*META.done/META.n);
+  document.getElementById('stats').innerHTML=`
+   <div class="stat"><div class="sl">Pilotes diseño</div><div class="sv">${META.n}</div><div class="su" style="color:var(--cyan)">Ø ${META.diam} m</div></div>
+   <div class="stat"><div class="sl">Replanteados</div><div class="sv" style="color:var(--green)">${META.done}</div><div class="su" style="color:var(--green)">${pct}% avance</div></div>
+   <div class="stat"><div class="sl">Pendientes</div><div class="sv" style="color:var(--amber)">${META.pending}</div><div class="su" style="color:var(--amber)">por replantear</div></div>
+   <div class="stat"><div class="sl">Desvío medio</div><div class="sv">${fmt(META.avgdev,1)} <small>cm</small></div><div class="su" style="color:var(--cyan)">máx ${fmt(META.maxdev,1)} cm</div></div>
+   <div class="stat"><div class="sl">Fuera de tol.</div><div class="sv" style="color:var(--red)">${META.tol_bad}</div><div class="su" style="color:var(--red)">&gt;10 cm</div></div>
+   <div class="stat"><div class="sl">En tolerancia</div><div class="sv" style="color:var(--green)">${META.tol_ok}</div><div class="su" style="color:var(--green)">≤${META.tol} cm</div></div>`;
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('barFill').style.width=pct+'%';
+  document.getElementById('progSub').textContent=`${META.done} de ${META.n} pilotes · faltan ${META.pending} · ${META.tol_warn} a revisar, ${META.tol_bad} fuera de tolerancia`;
+}
+function setV(v){viewStyle=v;document.querySelectorAll('.switch button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));draw();}
+function setMag(m){devMag=m;document.querySelectorAll('.magb').forEach(b=>b.classList.toggle('active',+b.dataset.m===m));draw();}
+function setF(f){filter=f;document.querySelectorAll('.filt button').forEach(b=>b.classList.toggle('active',b.dataset.f===f));renderList();draw();}
+function renderProjects(){
+  document.getElementById('projList').innerHTML=PROJECTS.map(p=>{
+    const meta = p.meta || computeMeta(p.piles,p.meta||{});
+    const pct=Math.round(100*meta.done/meta.n);
+    return `<div class="proj ${activeProj&&p.id===activeProj.id?'active':''}" onclick="selectProject('${p.id}')">
+      <div class="pn"><span class="dot" style="animation:none"></span>${p.name}</div>
+      <div class="pm">${meta.done}/${meta.n} pilotes · ${pct}%</div>
+      <div class="pbar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+}
+function renderTowerButtons(){
+  const towers=[...new Set(PILES.map(p=>p[3]))].sort();
+  const colors={T1:'#ff7a2f',T2:'#3ad6c7',T3:'#ffcf4a',T4:'#a78bfa',T5:'#5fd97a'};
+  let html=`<button class="twrb ${towerFilter==='all'?'active':''}" data-t="all" onclick="setTower('all')">Todas <span>${META.n}</span></button>`;
+  towers.forEach(t=>{
+    const c=colors[t]||'#8b97a8', n=PILES.filter(p=>p[3]===t).length;
+    html+=`<button class="twrb ${towerFilter===t?'active':''}" data-t="${t}" onclick="setTower('${t}')"><span class="d" style="background:${c}"></span>${t} <span>${n}</span></button>`;
+  });
+  document.getElementById('twrBtns').innerHTML=html;
+}
+function selectProject(id){
+  activeProj=PROJECTS.find(p=>p.id===id);
+  PILES=activeProj.piles; META=activeProj.meta;
+  cx0=(META.minx+META.maxx)/2; cy0=(META.miny+META.maxy)/2;
+  filter='all'; towerFilter='all'; selId=null; measureMode=false; measA=measB=null;
+  document.getElementById('filePill').textContent=activeProj.client;
+  document.getElementById('liveTxt').textContent=`i76 · ${META.done} puntos cargados`;
+  document.getElementById('detail').classList.remove('show');
+  document.getElementById('measOut').style.display='none';
+  document.getElementById('measBtn').classList.remove('active');
+  document.getElementById('q').value='';
+  document.querySelectorAll('.filt button').forEach(b=>b.classList.toggle('active',b.dataset.f==='all'));
+  renderProjects(); renderTowerButtons(); renderStats(); renderList();
+  requestAnimationFrame(()=>{resize();fitView();});
+   document
+   .querySelector(".side")
+   .classList.remove("open");
+}
+function setTower(t){
+  towerFilter=t;document.querySelectorAll('.twrb').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  // ajustar vista a los puntos visibles
+  const vis=PILES.filter(p=>t==='all'||p[3]===t);
+  if(vis.length){
+    const xs=vis.map(p=>p[1]),ys=vis.map(p=>p[2]);
+    const sx=Math.max(Math.max(...xs)-Math.min(...xs),5),sy=Math.max(Math.max(...ys)-Math.min(...ys),5),pad=80;
+    baseScale=Math.min((W-pad*2)/sx,(H-pad*2)/sy);cam.zoom=1;
+    const mcx=(Math.min(...xs)+Math.max(...xs))/2,mcy=(Math.min(...ys)+Math.max(...ys))/2;
+    cam.ox=-(mcx-cx0)*baseScale;cam.oy=(mcy-cy0)*baseScale;
+  }
+  renderList();draw();
+}
+function renderList(){
+  const q=(document.getElementById('q').value||'').toUpperCase();
+  let rows=PILES.filter(p=>{
+    if(towerFilter!=='all' && p[3]!==towerFilter)return false;
+    if(q && !p[0].toUpperCase().includes(q))return false;
+    if(filter==='pend')return !p[4];
+    if(filter==='done')return !!p[4];
+    if(filter==='bad')return p[4] && p[7]>10;
+    return true;
+  });
+  document.getElementById('list').innerHTML=rows.map(p=>{
+    const st=statusOf(p);
+    const badge=st==='pend'?'<span class="badge b-pend">Pendiente</span>':st==='ok'?'<span class="badge b-ok">En tol.</span>':st==='warn'?'<span class="badge b-warn">Revisar</span>':'<span class="badge b-bad">Fuera</span>';
+    const dev=p[4]?`<span style="color:${devColor(p[7])}">${fmt(p[7],1)} cm</span>`:'<span style="color:var(--txt-faint)">—</span>';
+    return `<div class="pt-row ${p[0]===selId?'sel':''}" onclick="locate('${p[0]}')"><div class="id" style="color:${TOWERC[p[3]]}">${p[0]}</div><div>${badge}</div><div class="dev">${dev}</div><div class="dev" style="color:var(--txt-dim)">${p[3]}</div></div>`;
+  }).join('');
+}
+function locate(id){selId=id;const p=PILES.find(x=>x[0]===id);cam.zoom=Math.max(cam.zoom,10);const s=baseScale*cam.zoom;cam.ox=-(p[1]-cx0)*s;cam.oy=(p[2]-cy0)*s;draw();renderList();openDetail(id);}
+function closeDetail(){document.getElementById('detail').classList.remove('show');selId=null;draw();renderList();}
+function openDetail(id){
+  const p=PILES.find(x=>x[0]===id); if(!p)return;
+  const st=statusOf(p);
+  document.getElementById('dId').textContent=p[0];
+  document.getElementById('dTw').textContent='· Torre '+p[3].slice(1);
+  const bEl=document.getElementById('dStatus');
+  const map={pend:['Pendiente · sin replantear','b-pend'],ok:['En tolerancia (≤5 cm)','b-ok'],warn:['Revisar (5–10 cm)','b-warn'],bad:['FUERA DE TOLERANCIA (>10 cm)','b-bad']};
+  bEl.textContent=map[st][0]; bEl.className='dbadge '+map[st][1];
+
+  const deEl=document.getElementById('dDE'),dnEl=document.getElementById('dDN');
+  const deh=document.getElementById('dDEh'),dnh=document.getElementById('dDNh');
+  const rad=document.getElementById('dRad'),co=document.getElementById('dCoords'),hint=document.getElementById('dHint');
+
+  if(!p[4]){
+    deEl.textContent='—';dnEl.textContent='—';deEl.style.color=dnEl.style.color='var(--txt-faint)';
+    deh.textContent='';dnh.textContent='';
+    rad.textContent='—';rad.style.color='var(--txt-faint)';
+    co.innerHTML=`Diseño &nbsp;E: ${fmt(p[1],3)} &nbsp; N: ${fmt(p[2],3)}<br><span style="color:var(--txt-faint)">Este pilote aún no ha sido replanteado.</span>`;
+    hint.style.display='none';
+  } else {
+    const dE=(p[5]-p[1])*100, dN=(p[6]-p[2])*100; // cm con signo
+    const col=v=>Math.abs(v)<=5?'var(--green)':Math.abs(v)<=10?'var(--yellow)':'var(--red)';
+    deEl.textContent=(dE>=0?'+':'')+fmt(dE,1)+' cm'; deEl.style.color=col(dE);
+    dnEl.textContent=(dN>=0?'+':'')+fmt(dN,1)+' cm'; dnEl.style.color=col(dN);
+    deh.textContent=dE>=0?'al Este':'al Oeste';
+    dnh.textContent=dN>=0?'al Norte':'al Sur';
+    rad.textContent=fmt(p[7],1)+' cm'; rad.style.color=devColor(p[7]);
+    co.innerHTML=`Diseño &nbsp;&nbsp;&nbsp;E: ${fmt(p[1],3)} &nbsp; N: ${fmt(p[2],3)}<br>Replant. E: ${fmt(p[5],3)} &nbsp; N: ${fmt(p[6],3)}`;
+    hint.style.display='none';
+  }
+  document.getElementById('detail').classList.add('show');
+}
+function expReport(){const pct=Math.round(100*META.done/META.n);toast('Reporte de avance generado',`${pct}% · ${META.done}/${META.n} pilotes · ${META.tol_bad} fuera de tolerancia`);}
+function toast(t,s){document.getElementById('toastTxt').innerHTML=`${t}${s?`<small>${s}</small>`:''}`;const el=document.getElementById('toast');el.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>el.classList.remove('show'),3400);}
+
+window.addEventListener('resize',()=>{DPR=Math.max(1,window.devicePixelRatio||1);resize();});
+selectProject('bcn');
+</script>
