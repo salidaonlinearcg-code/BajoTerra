@@ -1,5 +1,4 @@
 # BajoTerra
-
 Sitio web / repositorio estático para el proyecto "BajoTerra".
 
 Este repositorio contiene un sitio web estático (index.html ya presente). Los archivos añadidos aquí ayudan a publicar automáticamente en GitHub Pages.
@@ -33,4 +32,5 @@ Notas:
 - Si prefieres publicar desde la rama `gh-pages` en lugar de usar Actions, ajusta la configuración manualmente.
 - Reemplaza `https://github.com/<TU_USUARIO>/BajoTerra.git` con la URL real del repositorio.
 
-Si deseas, puedo también generar un archivo CNAME para un dominio personalizado o ajustar el workflow para hacer una build (por ejemplo, si usas un generador estático).
+Versión remota: v1.01.01
+
