@@ -618,9 +618,9 @@
       <div class="ctl legend">
         <div class="lt">Estado del pilote</div>
         <div class="lr"><span class="mk" style="border:1.5px dashed #8b97a8;border-radius:50%"></span> Diseño / pendiente</div>
-        <div class="lr"><span class="mk" style="background:#5fd97a;border-radius:50%"></span> Hecho · en tolerancia (≤5cm)</div>
+        <div class="lr"><span class="mk" style="background:#5fd97a;border-radius:50%"></span> Hecho ·  (≤5cm)</div>
         <div class="lr"><span class="mk" style="background:#ffcf4a;border-radius:50%"></span> Hecho · revisar (5–10cm)</div>
-        <div class="lr"><span class="mk" style="background:#ff5c6c;border-radius:50%"></span> Hecho · fuera (&gt;10cm)</div>
+        <div class="lr"><span class="mk" style="background:#ff5c6c;border-radius:50%"></span> Hecho · desviacion radial (&gt;10cm)</div>
       </div>
       <div class="tip" id="tip"></div>
       <div class="detail" id="detail">
@@ -2254,7 +2254,7 @@ function draw(){
       if(showV){ctx.beginPath();ctx.moveTo(d.x,d.y);ctx.lineTo(b.x,b.y);ctx.strokeStyle=col;ctx.lineWidth=devMag>1?1.6:1.2;ctx.stroke();}
       ctx.beginPath();ctx.arc(b.x,b.y,Math.max(2.6,rad*.75),0,7);ctx.fillStyle=col;ctx.fill();ctx.lineWidth=1;ctx.strokeStyle='#0c1016';ctx.stroke();
     }
-    if(rad>4){
+    if(rad>3){
       ctx.fillStyle='rgba(232,237,244,.85)';
       ctx.font='600 9px IBM Plex Mono';
       ctx.textAlign='center';
@@ -2653,7 +2653,7 @@ function renderStats(){
    <div class="stat"><div class="sl">Pendientes</div><div class="sv" style="color:var(--amber)">${META.pending}</div><div class="su" style="color:var(--amber)">por replantear</div></div>
    <div class="stat"><div class="sl">Desvío medio</div><div class="sv">${fmt(META.avgdev,1)} <small>cm</small></div><div class="su" style="color:var(--cyan)">máx ${fmt(META.maxdev,1)} cm</div></div>
    <div class="stat"><div class="sl">Fuera de tol.</div><div class="sv" style="color:var(--red)">${META.tol_bad}</div><div class="su" style="color:var(--red)">&gt;10 cm</div></div>
-   <div class="stat"><div class="sl">En tolerancia</div><div class="sv" style="color:var(--green)">${META.tol_ok}</div><div class="su" style="color:var(--green)">≤${META.tol} cm</div></div>`;
+   <div class="stat"><div class="sl">HECHO</div><div class="sv" style="color:var(--green)">${META.tol_ok}</div><div class="su" style="color:var(--green)">≤${META.tol} cm</div></div>`;
   document.getElementById('pct').textContent=pct+'%';
   document.getElementById('barFill').style.width=pct+'%';
   document.getElementById('progSub').textContent=`${META.done} de ${META.n} pilotes · faltan ${META.pending} · ${META.tol_warn} a revisar, ${META.tol_bad} fuera de tolerancia`;
@@ -2741,7 +2741,7 @@ function renderList(){
   });
   document.getElementById('list').innerHTML=rows.map(p=>{
     const st=statusOf(p);
-    const badge=st==='pend'?'<span class="badge b-pend">Pendiente</span>':st==='ok'?'<span class="badge b-ok">En tol.</span>':st==='warn'?'<span class="badge b-warn">Revisar</span>':'<span class="badge b-bad">Fuera</span>';
+    const badge=st==='pend'?'<span class="badge b-pend">Pendiente</span>':st==='ok'?'<span class="badge b-ok">HECHO.</span>':st==='warn'?'<span class="badge b-warn">Revisar</span>':'<span class="badge b-bad">Fuera de tol.</span>';
     const dev=p[4]?`<span style="color:${devColor(p[7])}">${fmt(p[7],1)} cm</span>`:'<span style="color:var(--txt-faint)">—</span>';
     return `<div class="pt-row ${p[0]===selId?'sel':''}" onclick="locate('${p[0]}')"><div class="id" style="color:${TOWERC[p[3]]}">${p[0]}</div><div>${badge}</div><div class="dev">${dev}</div><div class="dev" style="color:var(--txt-dim)">${p[3]}</div></div>`;
   }).join('');
@@ -2754,7 +2754,7 @@ function openDetail(id){
   document.getElementById('dId').textContent=p[0];
   document.getElementById('dTw').textContent='· Torre '+p[3].slice(1);
   const bEl=document.getElementById('dStatus');
-  const map={pend:['Pendiente · sin replantear','b-pend'],ok:['En tolerancia (≤5 cm)','b-ok'],warn:['Revisar (5–10 cm)','b-warn'],bad:['FUERA DE TOLERANCIA (>10 cm)','b-bad']};
+  const map={pend:['Pendiente · sin replantear','b-pend'],ok:[' HECHO (≤5 cm)','b-ok'],warn:['Revisar (5–10 cm)','b-warn'],bad:['DESVIACION RADIAL (>10 cm)','b-bad']};
   bEl.textContent=map[st][0]; bEl.className='dbadge '+map[st][1];
 
   const deEl=document.getElementById('dDE'),dnEl=document.getElementById('dDN');
