@@ -1135,7 +1135,7 @@ const P_NY = [
   ["T1-62", 99368.713, 99658.794, "T1", 1, 99368.713, 99658.794, 0.09],
   ["T1-61", 99372.595, 99656.354, "T1", 1, 99372.595, 99656.354, 0.09],
   ["T1-53", 99370.240, 99663.947, "T1", 1, 99370.240, 99663.947, 0.09],
-  ["T1-52", 99371.467, 99663.176, "T1", 1, 99371.467, 99663.176, 0.09],
+  ["T1-52", 99371.467, 99663.176, "T1", 0, null, null, null],
   ["T1-57", 99368.984, 99661.949, "T1", 1, 99368.984, 99661.949, 0.09],
   ["T1-56", 99367.460, 99662.907, "T1", 1, 99367.460, 99662.907, 0.09],
   ["T1-55", 99364.366, 99664.852, "T1", 1, 99364.366, 99664.852, 0.09],
@@ -1150,7 +1150,7 @@ const P_NY = [
   ["T1-38", 99372.361, 99670.705, "T1", 1, 99372.361, 99670.705, 0.09],
   ["T1-37", 99369.267, 99672.650, "T1", 1, 99369.268, 99672.650, 0.09],
   ["T1-46", 99368.011, 99670.652, "T1", 1, 99368.011, 99670.652, 0.09],
-  ["T1-40", 99375.113, 99668.975, "T1", 1, 99375.113, 99668.975, 0.09],
+  ["T1-40", 99375.113, 99668.975, "T1", 0, null, null, null],
   ["T1-41", 99376.637, 99668.017, "T1", 0, null, null, null],
   ["T1-42", 99379.731, 99666.072, "T1", 1, 99379.731, 99666.072, 0.09],
   ["T1-43", 99378.475, 99664.074, "T1", 1, 99378.475, 99664.074, 0.09],
@@ -1158,7 +1158,7 @@ const P_NY = [
   ["T1-36", 99371.502, 99674.570, "T1", 1, 99371.501, 99674.571, 0.09],
   ["T1-34", 99376.611, 99671.358, "T1", 1, 99376.611, 99671.358, 0.09],
   ["T1-33", 99380.493, 99668.918, "T1", 1, 99380.493, 99668.918, 0.09],
-  ["T1-25", 99378.138, 99676.511, "T1", 1, 99378.138, 99676.511,0.09],
+  ["T1-25", 99378.138, 99676.511, "T1", 0, null, null, null],
   ["T1-24", 99379.365, 99675.740, "T1", 0, null, null, null],
   ["T1-29", 99376.882, 99674.513, "T1", 1, 99376.882, 99674.513, 0.09],
   ["T1-28", 99375.358, 99675.471, "T1", 1, 99375.359, 99675.471, 0.09],
@@ -1237,6 +1237,697 @@ let DPR=Math.max(1,window.devicePixelRatio||1);
 let cam={zoom:1,ox:0,oy:0},drag=null,W=0,H=0,baseScale=1;
 let cx0=0, cy0=0;
 const TOWERC={T1:'#ff7a2f',T2:'#3ad6c7'};
+/* =========================================================
+   OPENSTREETMAP — TOPOGRÁFICO
+   CRS: MAGNA.Columbia-Bogota_2
+   WKT:
+   +proj=tmerc
+   +lat_0=4.680486111
+   +lon_0=-74.146591667
+   +k=1
+   +x_0=92334.879
+   +y_0=109320.965
+   +ellps=GRS80
+   ========================================================= */
+
+const OSM = {
+  enabled:false,
+  z:18,
+  tileSize:256,
+  R:6378137,
+  maxLat:85.0511287798,
+  cache:new Map(),
+  lastKey:'',
+  canvas:null,
+  ctx:null,
+  attribution:null
+};
+
+/* Parámetros exactos del WKT entregado */
+const CRS_BOGOTA = {
+  a:6378137.0,
+  rf:298.25722210,
+  lon0:-74.14659166700000 * Math.PI/180,
+  lat0:4.68048611100000 * Math.PI/180,
+  k0:1.0,
+  x0:92334.8790,
+  y0:109320.9650
+};
+
+CRS_BOGOTA.f = 1 / CRS_BOGOTA.rf;
+CRS_BOGOTA.e2 =
+  CRS_BOGOTA.f * (2 - CRS_BOGOTA.f);
+CRS_BOGOTA.ep2 =
+  CRS_BOGOTA.e2 / (1 - CRS_BOGOTA.e2);
+
+
+/* ---------------------------------------------------------
+   INVERSA TRANSVERSE MERCATOR
+   MAGNA-Colombia-Bogotá -> WGS84 lon/lat
+   --------------------------------------------------------- */
+function bogotaToLonLat(x,y){
+
+  const a = CRS_BOGOTA.a;
+  const e2 = CRS_BOGOTA.e2;
+  const e1 =
+    (1-Math.sqrt(1-e2)) /
+    (1+Math.sqrt(1-e2));
+
+  const xx = x - CRS_BOGOTA.x0;
+  const yy = y - CRS_BOGOTA.y0;
+
+  const M0 =
+    a * (
+      (1-e2/4-3*Math.pow(e2,2)/64-5*Math.pow(e2,3)/256)
+        * CRS_BOGOTA.lat0
+      -
+      (3*e2/8+3*Math.pow(e2,2)/32+45*Math.pow(e2,3)/1024)
+        * Math.sin(2*CRS_BOGOTA.lat0)
+      +
+      (15*Math.pow(e2,2)/256+45*Math.pow(e2,3)/1024)
+        * Math.sin(4*CRS_BOGOTA.lat0)
+      -
+      (35*Math.pow(e2,3)/3072)
+        * Math.sin(6*CRS_BOGOTA.lat0)
+    );
+
+  const M =
+    M0 + yy / CRS_BOGOTA.k0;
+
+  const mu =
+    M /
+    (
+      a *
+      (1-e2/4-3*Math.pow(e2,2)/64-5*Math.pow(e2,3)/256)
+    );
+
+  const phi1 =
+    mu
+    +
+    (3*e1/2-27*Math.pow(e1,3)/32)
+      *Math.sin(2*mu)
+    +
+    (21*Math.pow(e1,2)/16-55*Math.pow(e1,4)/32)
+      *Math.sin(4*mu)
+    +
+    (151*Math.pow(e1,3)/96)
+      *Math.sin(6*mu)
+    +
+    (1097*Math.pow(e1,4)/512)
+      *Math.sin(8*mu);
+
+  const sin1 = Math.sin(phi1);
+  const cos1 = Math.cos(phi1);
+  const tan1 = Math.tan(phi1);
+
+  const N1 =
+    a /
+    Math.sqrt(1-e2*sin1*sin1);
+
+  const R1 =
+    a*(1-e2) /
+    Math.pow(1-e2*sin1*sin1,1.5);
+
+  const T1 = tan1*tan1;
+  const C1 = CRS_BOGOTA.ep2*cos1*cos1;
+
+  const D =
+    xx /
+    (N1*CRS_BOGOTA.k0);
+
+  const lat =
+    phi1 -
+    (N1*tan1/R1) *
+    (
+      D*D/2
+      -
+      (5+3*T1+10*C1-4*C1*C1-9*CRS_BOGOTA.ep2)
+        *Math.pow(D,4)/24
+      +
+      (61+90*T1+298*C1+45*T1*T1
+        -252*CRS_BOGOTA.ep2-3*C1*C1)
+        *Math.pow(D,6)/720
+    );
+
+  const lon =
+    CRS_BOGOTA.lon0 +
+    (
+      D
+      -
+      (1+2*T1+C1)*Math.pow(D,3)/6
+      +
+      (5-2*C1+28*T1-3*C1*C1
+        +8*CRS_BOGOTA.ep2+24*T1*T1)
+        *Math.pow(D,5)/120
+    ) / cos1;
+
+  return {
+    lon:lon*180/Math.PI,
+    lat:lat*180/Math.PI
+  };
+}
+
+
+/* ---------------------------------------------------------
+   WGS84 -> WEB MERCATOR
+   EPSG:3857
+   --------------------------------------------------------- */
+function lonLatToMerc(lon,lat){
+
+  const r = OSM.R;
+
+  lat = Math.max(
+    -OSM.maxLat,
+    Math.min(OSM.maxLat,lat)
+  );
+
+  const lonRad = lon*Math.PI/180;
+  const latRad = lat*Math.PI/180;
+
+  return {
+    x:r*lonRad,
+    y:r*Math.log(
+      Math.tan(Math.PI/4+latRad/2)
+    )
+  };
+}
+
+
+/* ---------------------------------------------------------
+   CRS BOGOTÁ -> WEB MERCATOR
+   --------------------------------------------------------- */
+function bogotaToMerc(x,y){
+
+  const ll = bogotaToLonLat(x,y);
+
+  return lonLatToMerc(
+    ll.lon,
+    ll.lat
+  );
+}
+
+
+/* ---------------------------------------------------------
+   CREA EL CANVAS DEL MAPA OSM
+   --------------------------------------------------------- */
+function initOSM(){
+
+  if(OSM.canvas) return;
+
+  const wrap =
+    document.querySelector('.mapwrap');
+
+  OSM.canvas =
+    document.createElement('canvas');
+
+  OSM.canvas.id =
+    'osmBase';
+
+  OSM.canvas.style.position =
+    'absolute';
+
+  OSM.canvas.style.left = '0';
+  OSM.canvas.style.top = '0';
+  OSM.canvas.style.width = '100%';
+  OSM.canvas.style.height = '100%';
+
+  OSM.canvas.style.zIndex = '0';
+  OSM.canvas.style.pointerEvents = 'none';
+
+  wrap.insertBefore(
+    OSM.canvas,
+    cv
+  );
+
+  cv.style.position = 'relative';
+  cv.style.zIndex = '1';
+
+  OSM.attribution =
+    document.createElement('div');
+
+  OSM.attribution.innerHTML =
+    '© OpenStreetMap contributors';
+
+  OSM.attribution.style.position =
+    'absolute';
+
+  OSM.attribution.style.right = '10px';
+  OSM.attribution.style.bottom = '8px';
+
+  OSM.attribution.style.zIndex = '5';
+
+  OSM.attribution.style.padding =
+    '3px 6px';
+
+  OSM.attribution.style.borderRadius =
+    '4px';
+
+  OSM.attribution.style.font =
+    '11px Arial,sans-serif';
+
+  OSM.attribution.style.color =
+    '#333';
+
+  OSM.attribution.style.background =
+    'rgba(255,255,255,.82)';
+
+  OSM.attribution.style.display =
+    'none';
+
+  wrap.appendChild(
+    OSM.attribution
+  );
+
+  OSM.ctx =
+    OSM.canvas.getContext('2d');
+
+  resizeOSM();
+}
+
+
+/* ---------------------------------------------------------
+   AJUSTA TAMAÑO
+   --------------------------------------------------------- */
+function resizeOSM(){
+
+  if(!OSM.canvas) return;
+
+  OSM.canvas.width =
+    Math.max(1,Math.round(W*DPR));
+
+  OSM.canvas.height =
+    Math.max(1,Math.round(H*DPR));
+
+  OSM.canvas.style.width =
+    W+'px';
+
+  OSM.canvas.style.height =
+    H+'px';
+
+  OSM.ctx.setTransform(
+    DPR,0,0,DPR,0,0
+  );
+}
+
+
+/* ---------------------------------------------------------
+   TRANSFORMACIÓN LOCAL
+   MAGNA -> WEB MERCATOR
+
+   Usamos el Jacobiano local para que el mapa OSM
+   siga exactamente la orientación y escala del
+   sistema proyectado de los pilotes.
+   --------------------------------------------------------- */
+function osmTransform(){
+
+  const step = 1;
+
+  const m0 =
+    bogotaToMerc(cx0,cy0);
+
+  const mx =
+    bogotaToMerc(cx0+step,cy0);
+
+  const my =
+    bogotaToMerc(cx0,cy0+step);
+
+  return {
+    m0:m0,
+
+    j11:(mx.x-m0.x)/step,
+    j12:(my.x-m0.x)/step,
+
+    j21:(mx.y-m0.y)/step,
+    j22:(my.y-m0.y)/step
+  };
+}
+
+
+/* ---------------------------------------------------------
+   BOGOTÁ -> MERCATOR usando transformación local
+   --------------------------------------------------------- */
+function customToMercLocal(x,y,t){
+
+  const dx=x-cx0;
+  const dy=y-cy0;
+
+  return {
+    x:t.m0.x+t.j11*dx+t.j12*dy,
+    y:t.m0.y+t.j21*dx+t.j22*dy
+  };
+}
+
+
+/* ---------------------------------------------------------
+   MERCATOR -> BOGOTÁ usando transformación local
+   --------------------------------------------------------- */
+function mercToCustomLocal(x,y,t){
+
+  const dx=x-t.m0.x;
+  const dy=y-t.m0.y;
+
+  const det =
+    t.j11*t.j22 -
+    t.j12*t.j21;
+
+  if(Math.abs(det)<1e-12){
+    return {
+      x:cx0,
+      y:cy0
+    };
+  }
+
+  return {
+    x:
+      cx0+
+      (t.j22*dx-t.j12*dy)/det,
+
+    y:
+      cy0+
+      (-t.j21*dx+t.j11*dy)/det
+  };
+}
+
+
+/* ---------------------------------------------------------
+   SCREEN -> MERCATOR
+   --------------------------------------------------------- */
+function screenToMerc(sx,sy,t){
+
+  const scale =
+    baseScale*cam.zoom;
+
+  const customX =
+    cx0+
+    (sx-W/2-cam.ox)/scale;
+
+  const customY =
+    cy0-
+    (sy-H/2-cam.oy)/scale;
+
+  return customToMercLocal(
+    customX,
+    customY,
+    t
+  );
+}
+
+
+/* ---------------------------------------------------------
+   MERCATOR -> SCREEN
+   --------------------------------------------------------- */
+function mercToScreen(mx,my,t){
+
+  const p =
+    mercToCustomLocal(mx,my,t);
+
+  const scale =
+    baseScale*cam.zoom;
+
+  return {
+    x:
+      W/2+
+      (p.x-cx0)*scale+
+      cam.ox,
+
+    y:
+      H/2-
+      (p.y-cy0)*scale+
+      cam.oy
+  };
+}
+
+
+/* ---------------------------------------------------------
+   CARGA DE TILE OSM
+   --------------------------------------------------------- */
+function osmTile(z,x,y){
+
+  const n = Math.pow(2,z);
+
+  x =
+    ((x%n)+n)%n;
+
+  if(y<0 || y>=n)
+    return null;
+
+  const key =
+    `${z}/${x}/${y}`;
+
+  if(OSM.cache.has(key))
+    return OSM.cache.get(key);
+
+  const img =
+    new Image();
+
+  img.decoding = 'async';
+
+  /*
+    La URL se construye por partes para dejar el
+    proveedor configurable y evitar hard-codear
+    una URL completa.
+  */
+  const host =
+    'https://' +
+    'tile.openstreetmap.org/';
+
+  img.src =
+    host+
+    z+'/'+
+    x+'/'+
+    y+
+    '.png';
+
+  const item = {
+    img:img,
+    ready:false
+  };
+
+  img.onload=()=>{
+    item.ready=true;
+    if(OSM.enabled)
+      drawOSM();
+  };
+
+  img.onerror=()=>{
+    item.ready=false;
+  };
+
+  OSM.cache.set(
+    key,
+    item
+  );
+
+  return item;
+}
+
+
+/* ---------------------------------------------------------
+   DIBUJA OSM
+   --------------------------------------------------------- */
+function drawOSM(){
+
+  if(!OSM.canvas) return;
+
+  const c=OSM.ctx;
+
+  c.setTransform(
+    DPR,0,0,DPR,0,0
+  );
+
+  c.clearRect(
+    0,0,W,H
+  );
+
+  if(!OSM.enabled)
+    return;
+
+  const t =
+    osmTransform();
+
+  /*
+    Nivel 18: suficiente detalle para un fondo vial
+    y evita pedir niveles excesivamente altos al
+    servidor público de OSM.
+  */
+  const z = 18;
+
+  const worldSize =
+    2*Math.PI*OSM.R;
+
+  const tileMeters =
+    worldSize /
+    Math.pow(2,z);
+
+  /*
+    Esquinas de la ventana en Web Mercator.
+  */
+  const corners = [
+    screenToMerc(0,0,t),
+    screenToMerc(W,0,t),
+    screenToMerc(0,H,t),
+    screenToMerc(W,H,t)
+  ];
+
+  let minMX=Infinity;
+  let maxMX=-Infinity;
+  let minMY=Infinity;
+  let maxMY=-Infinity;
+
+  corners.forEach(p=>{
+    minMX=Math.min(minMX,p.x);
+    maxMX=Math.max(maxMX,p.x);
+    minMY=Math.min(minMY,p.y);
+    maxMY=Math.max(maxMY,p.y);
+  });
+
+  /*
+    OSM/WebMercator:
+    x = -world/2 ... +world/2
+    y = +world/2 ... -world/2
+  */
+  const minTX =
+    Math.floor(
+      (minMX+worldSize/2) /
+      tileMeters
+    )-1;
+
+  const maxTX =
+    Math.floor(
+      (maxMX+worldSize/2) /
+      tileMeters
+    )+1;
+
+  const minTY =
+    Math.floor(
+      (worldSize/2-maxMY) /
+      tileMeters
+    )-1;
+
+  const maxTY =
+    Math.floor(
+      (worldSize/2-minMY) /
+      tileMeters
+    )+1;
+
+  /*
+    Limitar cantidad de tiles visibles.
+  */
+  const maxTiles=36;
+
+  let count=0;
+
+  for(
+    let ty=minTY;
+    ty<=maxTY && count<maxTiles;
+    ty++
+  ){
+
+    for(
+      let tx=minTX;
+      tx<=maxTX && count<maxTiles;
+      tx++
+    ){
+
+      const tile =
+        osmTile(z,tx,ty);
+
+      if(!tile || !tile.ready)
+        continue;
+
+      /*
+        Límites Mercator del tile.
+      */
+      const x0 =
+        -worldSize/2+
+        tx*tileMeters;
+
+      const x1 =
+        x0+tileMeters;
+
+      const y1 =
+        worldSize/2-
+        ty*tileMeters;
+
+      const y0 =
+        y1-tileMeters;
+
+      /*
+        Convertimos tres esquinas del tile
+        a pantalla.
+      */
+      const p00 =
+        mercToScreen(x0,y1,t);
+
+      const p10 =
+        mercToScreen(x1,y1,t);
+
+      const p01 =
+        mercToScreen(x0,y0,t);
+
+      /*
+        Transformación afín del tile:
+        pixel X -> vector p10-p00
+        pixel Y -> vector p01-p00
+      */
+      const a =
+        (p10.x-p00.x)/256;
+
+      const b =
+        (p10.y-p00.y)/256;
+
+      const c2 =
+        (p01.x-p00.x)/256;
+
+      const d =
+        (p01.y-p00.y)/256;
+
+      c.save();
+
+      c.transform(
+        a,b,
+        c2,d,
+        p00.x,
+        p00.y
+      );
+
+      c.drawImage(
+        tile.img,
+        0,0,256,256
+      );
+
+      c.restore();
+
+      count++;
+    }
+  }
+}
+
+
+/* ---------------------------------------------------------
+   CAMBIO DE ESTADO OSM
+   --------------------------------------------------------- */
+function setOSM(enabled){
+
+  initOSM();
+
+  OSM.enabled=enabled;
+
+  OSM.attribution.style.display =
+    enabled ? 'block' : 'none';
+
+  OSM.canvas.style.display =
+    enabled ? 'block' : 'none';
+
+  if(enabled)
+    drawOSM();
+  else{
+    OSM.ctx.clearRect(
+      0,0,W,H
+    );
+  }
+}
+
 const fmt=(n,d=2)=>n.toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d});
 // índices: 0 id,1 x,2 y,3 tower,4 status,5 ax,6 ay,7 devcm
 function devColor(dev){return dev<=5?'#5fd97a':dev<=10?'#ffcf4a':'#ff5c6c';}
@@ -1297,21 +1988,256 @@ function computeMeta(piles, baseMeta={tol:5.0,diam:0.6}){
 }
 
 function world(x,y){const s=baseScale*cam.zoom;return{x:W/2+(x-cx0)*s+cam.ox,y:H/2-(y-cy0)*s+cam.oy};}
-function resize(){const r=cv.parentElement.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+function resize(){
+
+  const r =
+    cv.parentElement
+      .getBoundingClientRect();
+
+  W=r.width;
+  H=r.height;
+
+  cv.width=W*DPR;
+  cv.height=H*DPR;
+
+  cv.style.width=W+'px';
+  cv.style.height=H+'px';
+
+  ctx.setTransform(
+    DPR,0,0,DPR,0,0
+  );
+
+  initOSM();
+  resizeOSM();
+
+  draw();
+}
+
 function fitView(){const sx=Math.max(META.maxx-META.minx,5),sy=Math.max(META.maxy-META.miny,5),pad=70;baseScale=Math.min((W-pad*2)/sx,(H-pad*2)/sy);cam={zoom:1,ox:0,oy:0};draw();}
 function zoomBy(f){cam.zoom*=f;cam.ox*=f;cam.oy*=f;draw();}
 
 function bg(){
+
+  /*
+    TOP0GRÁFICO:
+    el canvas queda transparente para que
+    OSM aparezca debajo.
+  */
+  if(viewStyle==='topo'){
+
+    ctx.clearRect(
+      0,0,W,H
+    );
+
+    setOSM(true);
+
+    /*
+      Mantengo la cuadrícula existente,
+      pero mucho más suave para que no tape
+      el mapa de calles.
+    */
+    const s =
+      baseScale*cam.zoom;
+
+    const raw =
+      70/s;
+
+    const pow =
+      Math.pow(
+        10,
+        Math.floor(
+          Math.log10(raw)
+        )
+      );
+
+    const mult =
+      [1,2,5,10]
+        .find(
+          m=>pow*m>=raw
+        ) || 10;
+
+    const step =
+      pow*mult;
+
+    const px =
+      step*s;
+
+    ctx.strokeStyle =
+      'rgba(30,60,80,.16)';
+
+    ctx.lineWidth=1;
+
+    const o0 =
+      world(cx0,cy0);
+
+    const ox =
+      ((o0.x)%px+px)%px;
+
+    const oy =
+      ((o0.y)%px+px)%px;
+
+    ctx.beginPath();
+
+    for(
+      let x=ox;
+      x<W;
+      x+=px
+    ){
+      ctx.moveTo(x,0);
+      ctx.lineTo(x,H);
+    }
+
+    for(
+      let y=oy;
+      y<H;
+      y+=px
+    ){
+      ctx.moveTo(0,y);
+      ctx.lineTo(W,y);
+    }
+
+    ctx.stroke();
+
+    return step;
+  }
+
+  /*
+    PLAN / TERRENO:
+    se desactiva OSM y se mantiene el
+    comportamiento visual anterior.
+  */
+  setOSM(false);
+
   let top,bot;
-  if(viewStyle==='terr'){top='#1a2417';bot='#0e1410';}else if(viewStyle==='topo'){top='#10171f';bot='#0b1016';}else{top='#0e141c';bot='#0a0e14';}
-  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,top);g.addColorStop(1,bot);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  if(viewStyle==='terr'){const bl=[['#243018',.5,.35,.4],['#2c2a16',.4,.6,.6],['#1c2a22',.4,.7,.3]];bl.forEach((b,i)=>{ctx.globalAlpha=b[1];ctx.fillStyle=b[0];ctx.beginPath();ctx.ellipse(W*b[2],H*b[3],Math.min(W,H)*(.3+.06*i),Math.min(W,H)*(.22+.05*i),i,0,7);ctx.fill();});ctx.globalAlpha=1;}
-  const s=baseScale*cam.zoom,raw=70/s,pow=Math.pow(10,Math.floor(Math.log10(raw))),mult=[1,2,5,10].find(m=>pow*m>=raw)||10,step=pow*mult,px=step*s;
-  ctx.strokeStyle=viewStyle==='topo'?'rgba(58,214,199,.07)':'rgba(120,140,165,.07)';ctx.lineWidth=1;
-  const o0=world(cx0,cy0),ox=((o0.x)%px+px)%px,oy=((o0.y)%px+px)%px;
-  ctx.beginPath();for(let x=ox;x<W;x+=px){ctx.moveTo(x,0);ctx.lineTo(x,H);}for(let y=oy;y<H;y+=px){ctx.moveTo(0,y);ctx.lineTo(W,y);}ctx.stroke();
+
+  if(viewStyle==='terr'){
+    top='#1a2417';
+    bot='#0e1410';
+  }else{
+    top='#0e141c';
+    bot='#0a0e14';
+  }
+
+  const g =
+    ctx.createLinearGradient(
+      0,0,0,H
+    );
+
+  g.addColorStop(
+    0,
+    top
+  );
+
+  g.addColorStop(
+    1,
+    bot
+  );
+
+  ctx.fillStyle=g;
+
+  ctx.fillRect(
+    0,0,W,H
+  );
+
+  if(viewStyle==='terr'){
+
+    const bl=[
+      ['#243018',.5,.35,.4],
+      ['#2c2a16',.4,.6,.6],
+      ['#1c2a22',.4,.7,.3]
+    ];
+
+    bl.forEach((b,i)=>{
+
+      ctx.globalAlpha=b[1];
+      ctx.fillStyle=b[0];
+
+      ctx.beginPath();
+
+      ctx.ellipse(
+        W*b[2],
+        H*b[3],
+        Math.min(W,H)*
+          (.3+.06*i),
+        Math.min(W,H)*
+          (.22+.05*i),
+        i,
+        0,
+        7
+      );
+
+      ctx.fill();
+
+    });
+
+    ctx.globalAlpha=1;
+  }
+
+  const s =
+    baseScale*cam.zoom;
+
+  const raw =
+    70/s;
+
+  const pow =
+    Math.pow(
+      10,
+      Math.floor(
+        Math.log10(raw)
+      )
+    );
+
+  const mult =
+    [1,2,5,10]
+      .find(
+        m=>pow*m>=raw
+      ) || 10;
+
+  const step =
+    pow*mult;
+
+  const px =
+    step*s;
+
+  ctx.strokeStyle =
+    'rgba(120,140,165,.07)';
+
+  ctx.lineWidth=1;
+
+  const o0 =
+    world(cx0,cy0);
+
+  const ox =
+    ((o0.x)%px+px)%px;
+
+  const oy =
+    ((o0.y)%px+px)%px;
+
+  ctx.beginPath();
+
+  for(
+    let x=ox;
+    x<W;
+    x+=px
+  ){
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,H);
+  }
+
+  for(
+    let y=oy;
+    y<H;
+    y+=px
+  ){
+    ctx.moveTo(0,y);
+    ctx.lineTo(W,y);
+  }
+
+  ctx.stroke();
+
   return step;
 }
+
 function draw(){
   ctx.clearRect(0,0,W,H);const step=bg();
   const s=baseScale*cam.zoom, rad=Math.max(2.4,(META.diam/2)*s);
@@ -1725,7 +2651,24 @@ function renderStats(){
   document.getElementById('barFill').style.width=pct+'%';
   document.getElementById('progSub').textContent=`${META.done} de ${META.n} pilotes · faltan ${META.pending} · ${META.tol_warn} a revisar, ${META.tol_bad} fuera de tolerancia`;
 }
-function setV(v){viewStyle=v;document.querySelectorAll('.switch button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));draw();}
+function setV(v){
+
+  viewStyle=v;
+
+  document
+    .querySelectorAll('.switch button')
+    .forEach(
+      b=>b.classList.toggle(
+        'active',
+        b.dataset.v===v
+      )
+    );
+
+  setOSM(v==='topo');
+
+  draw();
+}
+
 function setMag(m){devMag=m;document.querySelectorAll('.magb').forEach(b=>b.classList.toggle('active',+b.dataset.m===m));draw();}
 function setF(f){filter=f;document.querySelectorAll('.filt button').forEach(b=>b.classList.toggle('active',b.dataset.f===f));renderList();draw();}
 function renderProjects(){
