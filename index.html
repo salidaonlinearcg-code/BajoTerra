@@ -217,11 +217,11 @@
   .brand{
 
     min-width:0;
-    flex:1;
+    flex:0 0 auto;
 
     gap:7px;
 
-    font-size:16px;
+    font-size:0 ;
     overflow:hidden;
   }
 
@@ -233,7 +233,7 @@
   .file-pill{
    
     position:relative;
-    
+    flex:1 1 auto;
     min-width:0;
 
     overflow:hidden;
@@ -322,16 +322,45 @@
     height:42px;
   }
 
+
   .layers{
-    left:10px;
-    top:10px;
+  left:10px;
+  top:10px;
 
-    max-width:calc(100% - 150px);
+  width:150px;
+  max-width:150px;
 
-    max-height:42vh;
+  padding:8px;
 
-    overflow-y:auto;
+  overflow:visible;
   }
+
+/* En móvil ocultamos todo el contenido de Capas */
+.layers > .lt,
+.layers > .lay,
+.layers > div:not(:last-child){
+  display:none;
+}
+
+/* El botón de medir ocupa todo el pequeño panel */
+.layers #measBtn{
+  display:block;
+  width:100% !important;
+  min-height:42px;
+
+  padding:9px 10px;
+
+  font-size:12px;
+  white-space:nowrap;
+}
+
+/* Resultado de la medición */
+.layers #measOut{
+  margin-top:6px !important;
+  text-align:center;
+}
+
+
 
   .legend{
     left:10px;
@@ -570,7 +599,7 @@
 ☰
 </button>
     <div class="brand"><img src="logo bajoterra.svg" class="mark" alt="Logo">Bajo<b>Terra</b></div>
-    <div class="file-pill">📐 Control de replanteo · <b id="filePill">PILOTES_BARCELONA.dwg</b></div>
+    <div class="file-pill">📐Control de replanteo·<b id="filePill">PILOTES_BARCELONA.dwg</b></div>
     <div class="header-spacer"></div>
     <div class="live"><span class="dot"></span> <span id="liveTxt">i76 conectado</span></div>
     <button class="btn btn-ghost" onclick="toast('Sincronizado con i76','Últimas capturas hace 6 min · WiFi')">⟳ Sincronizar</button>
@@ -704,7 +733,7 @@ const P_BAR = [
   ["T1-34", 99250.227, 99787.736, "T1", 1, 99250.227, 99787.736, 0.09],
   ["T1-19", 99247.203, 99796.907, "T1", 0, null, null, null],
   ["T1-20", 99249.611, 99800.808, "T1", 1, 99249.611, 99800.808, 0.09],
-  ["T1-18", 99246.441, 99795.673, "T1", 0, null, null, null],
+  ["T1-18", 99246.441, 99795.673, "T1", 1, 99246.441, 99795.673, 0.09],
   ["T1-17", 99244.033, 99791.771, "T1", 1, 99244.033, 99791.771, 0.09],
   ["T1-13", 99244.833, 99798.369, "T1", 0, null, null, null],
   ["T1-12", 99245.716, 99799.799, "T1", 0, null, null, null],
