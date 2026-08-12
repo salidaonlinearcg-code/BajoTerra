@@ -238,7 +238,12 @@
 
     overflow:hidden;
     
+    
   }
+  .control-label {
+    display: none;
+  }
+
   /* Ocultar información secundaria del header */
   .header-spacer,
   header > .btn{
@@ -304,8 +309,10 @@
     max-width:calc(100% - 20px);
 
     overflow-x:auto;
+    
   }
-
+ 
+ 
   .switch button{
     min-height:40px;
     padding:8px 10px;
@@ -599,7 +606,9 @@
 ☰
 </button>
     <div class="brand"><img src="logo bajoterra.svg" class="mark" alt="Logo">Bajo<b>Terra</b></div>
-    <div class="file-pill">📐Control de replanteo·<b id="filePill">PILOTES_BARCELONA.dwg</b></div>
+    <div class="file-pill">
+      <span class="control-label">📐Control de replanteo·</span><b id="filePill">PILOTES_BARCELONA.dwg</b>
+    </div>
     <div class="header-spacer"></div>
     <div class="live"><span class="dot"></span> <span id="liveTxt">i76 conectado</span></div>
     <button class="btn btn-ghost" onclick="toast('Sincronizado con i76','Últimas capturas hace 6 min · WiFi')">⟳ Sincronizar</button>
@@ -731,11 +740,11 @@ const P_BAR = [
   ["T1-31", 99255.963, 99797.029, "T1", 1, 99255.965, 99797.030, 0.09],
   ["T1-33", 99252.73, 99791.791, "T1", 1, 99252.73, 99791.791, 0.09],
   ["T1-34", 99250.227, 99787.736, "T1", 1, 99250.227, 99787.736, 0.09],
-  ["T1-19", 99247.203, 99796.907, "T1", 0, null, null, null],
+  ["T1-19", 99247.203, 99796.907, "T1", 1, 99247.203, 99796.907, 0.09],
   ["T1-20", 99249.611, 99800.808, "T1", 1, 99249.611, 99800.808, 0.09],
   ["T1-18", 99246.441, 99795.673, "T1", 1, 99246.441, 99795.673, 0.09],
   ["T1-17", 99244.033, 99791.771, "T1", 1, 99244.033, 99791.771, 0.09],
-  ["T1-13", 99244.833, 99798.369, "T1", 0, null, null, null],
+  ["T1-13", 99244.833, 99798.369, "T1", 1, 99244.833, 99798.369, 0.09],
   ["T1-12", 99245.716, 99799.799, "T1", 0, null, null, null],
   ["T1-11", 99247.683, 99802.986, "T1", 1, 99247.683, 99802.986, 0.09],
   ["T1-10", 99245.675, 99804.225, "T1", 1, 99245.675, 99804.225, 0.09],
@@ -1205,7 +1214,7 @@ const P_NY = [
   ["T1-19", 99375.434, 99681.051, "T1", 1, 99375.434, 99681.051, 0.09],
   ["T1-17", 99380.769, 99680.651, "T1", 1, 99380.769, 99680.651, 0.09],
   ["T1-18", 99376.765, 99683.168, "T1", 1, 99376.765, 99683.168, 0.09],
-  ["T1-7", 99383.587, 99685.181, "T1", 0, null, null, null],
+  ["T1-7", 99383.587, 99685.181, "T1", 1, 99383.587, 99685.181, 0.09],
   ["T1-6", 99384.815, 99684.409, "T1", 0, null, null, null],
   ["T1-11", 99382.331, 99683.183, "T1", 0, null, null, null],
   ["T1-10", 99380.807, 99684.141, "T1", 1, 99380.807, 99684.141, 0.09],
@@ -1242,8 +1251,8 @@ let viewStyle='plan', filter='all', selId=null, devMag=1;
 
 // === Proyectos (cada obra es un proyecto; las torres se aíslan dentro) ===
 const PROJECTS=[
-  {id:'bcn', name:'Pilotes Barcelona', client:'PILOTES_BARCELONA.dwg', piles:P_BAR, meta:M_BAR},
   {id:'ny', name:'Pilotes NuevaYork', client:'PILOTES_NUEVA_YORK.dwg', piles:P_NY, meta:M_NY},
+  {id:'bcn', name:'Pilotes Barcelona', client:'PILOTES_BARCELONA.dwg', piles:P_BAR, meta:M_BAR},
 ];
 PROJECTS.forEach(p=>{p.meta=computeMeta(p.piles,p.meta||{});});
 let activeProj=null;
@@ -1281,6 +1290,7 @@ const TOWERC={T1:'#ff7a2f',T2:'#3ad6c7'};
 
 const OSM = {
   enabled:false,
+  provider:'osm',
   z:18,
   tileSize:256,
   R:6378137,
@@ -1694,52 +1704,69 @@ function osmTile(z,x,y){
 
   const n = Math.pow(2,z);
 
-  x =
-    ((x%n)+n)%n;
+  x = ((x%n)+n)%n;
 
   if(y<0 || y>=n)
     return null;
 
   const key =
-    `${z}/${x}/${y}`;
+    `${OSM.provider}/${z}/${x}/${y}`;
 
   if(OSM.cache.has(key))
     return OSM.cache.get(key);
 
-  const img =
-    new Image();
+  const img = new Image();
 
   img.decoding = 'async';
 
-  /*
-    La URL se construye por partes para dejar el
-    proveedor configurable y evitar hard-codear
-    una URL completa.
-  */
-  const host =
-    'https://' +
-    'tile.openstreetmap.org/';
+  let src;
 
-  img.src =
-    host+
-    z+'/'+
-    x+'/'+
-    y+
-    '.png';
+  if(OSM.provider === 'sat'){
+
+    src =
+      'https://server.arcgisonline.com/' +
+      'ArcGIS/rest/services/World_Imagery/' +
+      'MapServer/tile/' +
+      z + '/' +
+      y + '/' +
+      x;
+
+  }
+  else{
+
+    src =
+      'https://tile.openstreetmap.org/' +
+      z + '/' +
+      x + '/' +
+      y + '.png';
+
+  }
+
+  img.src = src;
 
   const item = {
-    img:img,
-    ready:false
+    img: img,
+    ready: false
   };
 
-  img.onload=()=>{
-    item.ready=true;
+  img.onload = () => {
+
+    item.ready = true;
+
     if(OSM.enabled)
       drawOSM();
+
   };
 
-  img.onerror=()=>{
-    item.ready=false;
+  img.onerror = () => {
+
+    item.ready = false;
+
+    console.warn(
+      'Error cargando tile:',
+      src
+    );
+
   };
 
   OSM.cache.set(
@@ -1749,7 +1776,6 @@ function osmTile(z,x,y){
 
   return item;
 }
-
 
 /* ---------------------------------------------------------
    DIBUJA OSM
@@ -2140,8 +2166,8 @@ function bg(){
   let top,bot;
 
   if(viewStyle==='terr'){
-    top='#1a2417';
-    bot='#0e1410';
+    top='#0a0e14';
+    bot='#0a0e14';
   }else{
     top='#0e141c';
     bot='#0a0e14';
@@ -2168,39 +2194,6 @@ function bg(){
     0,0,W,H
   );
 
-  if(viewStyle==='terr'){
-
-    const bl=[
-      ['#243018',.5,.35,.4],
-      ['#2c2a16',.4,.6,.6],
-      ['#1c2a22',.4,.7,.3]
-    ];
-
-    bl.forEach((b,i)=>{
-
-      ctx.globalAlpha=b[1];
-      ctx.fillStyle=b[0];
-
-      ctx.beginPath();
-
-      ctx.ellipse(
-        W*b[2],
-        H*b[3],
-        Math.min(W,H)*
-          (.3+.06*i),
-        Math.min(W,H)*
-          (.22+.05*i),
-        i,
-        0,
-        7
-      );
-
-      ctx.fill();
-
-    });
-
-    ctx.globalAlpha=1;
-  }
 
   const s =
     baseScale*cam.zoom;
@@ -2700,7 +2693,23 @@ function setV(v){
       )
     );
 
-  setOSM(v==='topo');
+   if(v === 'topo'){
+    OSM.provider = 'osm';
+    if(OSM.attribution)
+    OSM.attribution.textContent =
+      '© OpenStreetMap contributors';
+    setOSM(true);
+  }
+  else if(v === 'terr'){
+    OSM.provider = 'sat';
+     if(OSM.attribution)
+    OSM.attribution.textContent =
+      'Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community';
+    setOSM(true);
+  }
+  else{
+    setOSM(false);
+  }
 
   draw();
 }
@@ -2733,7 +2742,7 @@ function selectProject(id){
   cx0=(META.minx+META.maxx)/2; cy0=(META.miny+META.maxy)/2;
   filter='all'; towerFilter='all'; selId=null; measureMode=false; measA=measB=null;
   document.getElementById('filePill').textContent=activeProj.client;
-  document.getElementById('liveTxt').textContent=`i76 · ${META.done} puntos cargados`;
+  document.getElementById('liveTxt').textContent=`i76 · ${META.done} puntos replanteados`;
   document.getElementById('detail').classList.remove('show');
   document.getElementById('measOut').style.display='none';
   document.getElementById('measBtn').classList.remove('active');
@@ -2847,5 +2856,5 @@ function expReport(){const pct=Math.round(100*META.done/META.n);toast('Reporte d
 function toast(t,s){document.getElementById('toastTxt').innerHTML=`${t}${s?`<small>${s}</small>`:''}`;const el=document.getElementById('toast');el.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>el.classList.remove('show'),3400);}
 
 window.addEventListener('resize',()=>{DPR=Math.max(1,window.devicePixelRatio||1);resize();});
-selectProject('bcn');
+selectProject('ny');
 </script>
