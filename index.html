@@ -3072,7 +3072,8 @@ function selectProject(id){
 
   // Datos que utiliza toda la plataforma
   PILES = activeProj.pilotes;
-  META  = activeProj.resumen;
+  META = computeMeta(activeProj.pilotes, activeProj.resumen || {});
+
 
 
   // Centro del proyecto
