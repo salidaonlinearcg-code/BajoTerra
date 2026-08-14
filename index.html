@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PP Centrum — Seguimiento y Control Pilotaje </title>
+<title>BajoTerra S.A.S. — Seguimiento y Control Pilotaje </title>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0c1016;--panel:#131922;--panel-2:#1a222e;--line:#232d3b;--txt:#e8edf4;--txt-dim:#8b97a8;--txt-faint:#5b6676;--amber:#1e90ff;--amber-soft:#cfe9ff;--cyan:#3ad6c7;--green:#5fd97a;--yellow:#ffcf4a;--red:#ff5c6c;--mono:'IBM Plex Mono',monospace;--sans:'Archivo',sans-serif}
@@ -703,6 +703,298 @@
 <div class="toast" id="toast"><div class="ti">✓</div><div id="toastTxt"></div></div>
 
 <script>
+
+function computeMeta(piles, baseMeta={tol:5.0,diam:0.6}){
+  const n=piles.length;
+  let done=0, tol_ok=0, tol_warn=0, tol_bad=0, sumdev=0, maxdev=0;
+  let minx=Infinity,maxx=-Infinity,miny=Infinity,maxy=-Infinity,t1=0,t2=0;
+  for(const p of piles){
+    const x=p[1], y=p[2];
+    minx=Math.min(minx,x); maxx=Math.max(maxx,x); miny=Math.min(miny,y); maxy=Math.max(maxy,y);
+    if(p[3]==='T1') t1++;
+    if(p[3]==='T2') t2++;
+    // Si no hay replanteado, no computar desviación
+    if(!p[4]) continue;
+    done++;
+    // Normalizar desviación a centímetros a partir de coordenadas cuando estén disponibles
+    let d = 0;
+    if(typeof p[5]==='number' && typeof p[6]==='number'){
+      const de = (p[5]-p[1])*100; // cm
+      const dn = (p[6]-p[2])*100; // cm
+      d = Math.hypot(de,dn);
+      // Actualizar p[7] con la desviación normalizada en cm
+      p[7] = Number(d);
+    } else {
+      // Fallback: si p[7] existe, intentar inferir unidad
+      const raw = Number(p[7]) || 0;
+      // Si el valor es pequeño (<=3) es muy probable que sea metros -> convertir a cm
+      // Si es mayor, asumir ya está en cm
+      d = raw > 3 ? raw : raw * 100;
+      p[7] = d;
+    }
+    sumdev += d;
+    maxdev = Math.max(maxdev,d);
+    if(d<=baseMeta.tol) tol_ok++;
+    else if(d<=10) tol_warn++;
+    else tol_bad++;
+  }
+  return {
+    ...baseMeta,
+    n,
+    done,
+    pending:n-done,
+    minx:isFinite(minx)?minx:0,
+    maxx:isFinite(maxx)?maxx:0,
+    miny:isFinite(miny)?miny:0,
+    maxy:isFinite(maxy)?maxy:0,
+    diam:baseMeta.diam||0.6,
+    t1,
+    t2,
+    tol_ok,
+    tol_warn,
+    tol_bad,
+    avgdev: done? sumdev/done : 0,
+    maxdev,
+  };
+}
+
+const P_VTL = [
+["T1-110", 96398.9082, 103043.8571, "T1", 0, null, null, null],
+["T1-109", 96395.9473, 103046.2229, "T1", 0, null, null, null],
+["T1-108", 96399.2644, 103041.1789, "T1", 0, null, null, null],
+["T1-107", 96397.6909, 103042.4617,"T1",0,null,null,null],
+["T1-106", 96394.8549, 103044.8557,"T1",0,null,null,null],
+["T1-105", 96395.9572, 103042.7909,"T1",0,null,null,null],
+["T1-104", 96390.2411, 103048.1325,"T1",0,null,null,null],
+["T1-103", 96388.6004, 103049.4433,"T1",0,null,null,null],
+["T1-102", 96392.2072, 103045.7872,"T1",0,null,null,null],
+["T1-101", 96384.2254, 103052.939,"T1",0,null,null,null],
+["T1-100", 96382.5848, 103054.2498,"T1",0,null,null,null],
+["T1-99", 96386.0353, 103050.7185,"T1",0,null,null,null],
+["T1-98", 96367.1191, 103069.2564,"T1",0,null,null,null],
+["T1-97", 96393.3724, 103043.0002,"T1",0,null,null,null],
+["T1-96", 96397.451, 103038.9094,"T1",0,null,null,null],
+["T1-95", 96377.8973, 103057.9951,"T1",0,null,null,null],
+["T1-94", 96364.1581, 103071.6222,"T1",0,null,null,null],
+["T1-93", 96394.6463, 103041.1503,"T1",0,null,null,null],
+["T1-92", 96376.2567, 103059.306,"T1",0,null,null,null],
+["T1-91", 96379.8634, 103055.6498,"T1",0,null,null,null],
+["T1-90", 96374.2645, 103060.8977,"T1",0,null,null,null],
+["T1-89", 96372.0424, 103062.9227,"T1",0,null,null,null],
+["T1-88", 96370.1705, 103064.4247,"T1",0,null,null,null],
+["T1-87", 96390.6248, 103043.8067,"T1",0,null,null,null],
+["T1-86", 96367.8268, 103066.2974,"T1",0,null,null,null],
+["T1-85", 96366.0267, 103067.8892,"T1",0,null,null,null],
+["T1-84", 96388.4177, 103045.5701,"T1",0,null,null,null],
+["T1-83", 96363.0658, 103070.127,"T1",0,null,null,null],
+["T1-82", 96384.4529, 103048.738,"T1",0,null,null,null],
+["T1-81", 96361.4674, 103071.3785,"T1",0,null,null,null],
+["T1-80", 96380.488, 103051.9059,"T1",0,null,null,null],
+["T1-79", 96363.7696, 103068.5086,"T1",0,null,null,null],
+["T1-78", 96395.672, 103036.6828,"T1",0,null,null,null],
+["T1-77", 96378.281, 103053.6693,"T1",0,null,null,null],
+["T1-76", 96392.8673, 103038.9237,"T1",0,null,null,null],
+["T1-75", 96370.5287, 103061.0282,"T1",0,null,null,null],
+["T1-74", 96376.074, 103055.4327,"T1",0,null,null,null],
+["T1-73", 96391.3048, 103040.1722,"T1",0,null,null,null],
+["T1-72", 96368.6537, 103062.5263,"T1",0,null,null,null],
+["T1-71", 96389.1173, 103041.92,"T1",0,null,null,null],
+["T1-70", 96372.3044, 103058.4446,"T1",0,null,null,null],
+["T1-69", 96364.5442, 103066.0338,"T1",0,null,null,null],
+["T1-68", 96386.7735, 103043.7926,"T1",0,null,null,null],
+["T1-67", 96385.3868, 103044.9006,"T1",0,null,null,null],
+["T1-66", 96394.3841, 103035.8559,"T1",0,null,null,null],
+["T1-65", 96382.9454, 103046.8513,"T1",0,null,null,null],
+["T1-64", 96391.9427, 103037.8065,"T1",0,null,null,null],
+["T1-63", 96365.7419, 103063.688,"T1",0,null,null,null],
+["T1-62", 96390.5559, 103038.9145,"T1",0,null,null,null],
+["T1-61", 96362.4587, 103066.868,"T1",0,null,null,null],
+["T1-60", 96380.504, 103048.802,"T1",0,null,null,null],
+["T1-59", 96379.1173, 103049.91,"T1",0,null,null,null],
+["T1-58", 96388.2122, 103040.7872,"T1",0,null,null,null],
+["T1-57", 96359.6541, 103069.109,"T1",0,null,null,null],
+["T1-56", 96376.7735, 103051.7826,"T1",0,null,null,null],
+["T1-55", 96385.8684, 103042.6598,"T1",0,null,null,null],
+["T1-54", 96369.0306, 103059.1532,"T1",0,null,null,null],
+["T1-53", 96384.4817, 103043.7678,"T1",0,null,null,null],
+["T1-52", 96374.4298, 103053.6552,"T1",0,null,null,null],
+["T1-51", 96367.1556, 103060.6513,"T1",0,null,null,null],
+["T1-50", 96373.043, 103054.7632,"T1",0,null,null,null],
+["T1-49", 96382.0403, 103045.7185,"T1",0,null,null,null],
+["T1-48", 96370.7969, 103056.5579,"T1",0,null,null,null],
+["T1-47", 96379.5989, 103047.6692,"T1",0,null,null,null],
+["T1-46", 96378.2122, 103048.7771,"T1",0,null,null,null],
+["T1-45", 96392.8766, 103033.9691,"T1",0,null,null,null],
+["T1-44", 96375.8684, 103050.6498,"T1",0,null,null,null],
+["T1-43", 96364.2344, 103061.8013,"T1",0,null,null,null],
+["T1-42", 96373.6614, 103052.4132,"T1",0,null,null,null],
+["T1-41", 96388.9067, 103037.1308,"T1",0,null,null,null],
+["T1-40", 96372.1379, 103053.6304,"T1",0,null,null,null],
+["T1-39", 96362.2422, 103063.393,"T1",0,null,null,null],
+["T1-38", 96386.7047, 103038.9004,"T1",0,null,null,null],
+["T1-37", 96360.6797, 103064.6415,"T1",0,null,null,null],
+["T1-36", 96369.6965, 103055.5811,"T1",0,null,null,null],
+["T1-35", 96384.4977, 103040.6639,"T1",0,null,null,null],
+["T1-34", 96357.875, 103066.8824,"T1",0,null,null,null],
+["T1-33", 96366.8645, 103057.8439,"T1",0,null,null,null],
+["T1-32", 96380.5328, 103043.8318,"T1",0,null,null,null],
+["T1-31", 96363.5246, 103060.5124,"T1",0,null,null,null],
+["T1-30", 96361.3176, 103062.2758,"T1",0,null,null,null],
+["T1-29", 96376.568, 103046.9997,"T1",0,null,null,null],
+["T1-28", 96359.7941, 103063.493,"T1",0,null,null,null],
+["T1-27", 96391.2942, 103031.9887,"T1",0,null,null,null],
+["T1-26", 96374.3609, 103048.7631,"T1",0,null,null,null],
+["T1-25", 96357.3527, 103065.4437,"T1",0,null,null,null],
+["T1-24", 96372.1539, 103050.5265,"T1",0,null,null,null],
+["T1-23", 96385.1223, 103036.92,"T1",0,null,null,null],
+["T1-22", 96388.729, 103033.2638,"T1",0,null,null,null],
+["T1-21", 96368.189, 103053.6944,"T1",0,null,null,null],
+["T1-20", 96387.0884, 103034.5747,"T1",0,null,null,null],
+["T1-19", 96364.2242, 103056.8623,"T1",0,null,null,null],
+["T1-18", 96378.9504, 103041.8513,"T1",0,null,null,null],
+["T1-17", 96382.4009, 103038.32,"T1",0,null,null,null],
+["T1-16", 96361.8218, 103058.7817,"T1",0,null,null,null],
+["T1-15", 96380.7603, 103039.6308,"T1",0,null,null,null],
+["T1-14", 96359.8101, 103060.3891,"T1",0,null,null,null],
+["T1-13", 96372.7785, 103046.7826,"T1",0,null,null,null],
+["T1-12", 96376.3853, 103043.1264,"T1",0,null,null,null],
+["T1-11", 96355.8453, 103063.557,"T1",0,null,null,null],
+["T1-10", 96374.7446, 103044.4373,"T1",0,null,null,null],
+["T1-9", 96366.6066, 103051.7139,"T1",0,null,null,null],
+["T1-8", 96370.0571, 103048.1826,"T1",0,null,null,null],
+["T1-7", 96368.4165, 103049.4934,"T1",0,null,null,null],
+["T1-6", 96360.2394, 103056.8013,"T1",0,null,null,null],
+["T1-5", 96364.0415, 103052.989,"T1",0,null,null,null],
+["T1-4", 96362.518, 103054.2063,"T1",0,null,null,null],
+["T1-3", 96357.7133, 103058.0452,"T1",0,null,null,null],
+["T1-2", 96356.0727, 103059.3561,"T1",0,null,null,null],
+["T1-1", 96353.8852, 103061.1039,"T1",0,null,null,null],
+["T2-119", 96408.882, 103109.2863,"T2",0,null,null,null],
+["T2-118", 96406.9025, 103110.8699,"T2",0,null,null,null],
+["T2-117", 96405.0167, 103112.3785,"T2",0,null,null,null],
+["T2-116", 96402.8693, 103114.0965,"T2",0,null,null,null],
+["T2-115", 96400.9835, 103115.6051,"T2",0,null,null,null],
+["T2-114", 96399.004, 103117.1887,"T2",0,null,null,null],
+["T2-113", 96407.4803, 103106.5658,"T2",0,null,null,null],
+["T2-112", 96405.1377, 103108.664,"T2",0,null,null,null],
+["T2-111", 96403.1426, 103110.0359,"T2",0,null,null,null],
+["T2-110", 96400.9952, 103111.7539,"T2",0,null,null,null],
+["T2-109", 96399.2188, 103113.3992,"T2",0,null,null,null],
+["T2-108", 96396.6575, 103115.224,"T2",0,null,null,null],
+["T2-107", 96406.1685, 103104.9259,"T2",0,null,null,null],
+["T2-106", 96402.0338, 103108.6499,"T2",0,null,null,null],
+["T2-105", 96399.8864, 103110.3678,"T2",0,null,null,null],
+["T2-104", 96395.3457, 103113.5842,"T2",0,null,null,null],
+["T2-103", 96403.9469, 103103.1174,"T2",0,null,null,null],
+["T2-102", 96401.9674, 103104.7011,"T2",0,null,null,null],
+["T2-101", 96400.0816, 103106.2097,"T2",0,null,null,null],
+["T2-100", 96397.9342, 103107.9276,"T2",0,null,null,null],
+["T2-99", 96396.0484, 103109.4362,"T2",0,null,null,null],
+["T2-98", 96394.0689, 103111.0199,"T2",0,null,null,null],
+["T2-97", 96402.6702, 103100.5531,"T2",0,null,null,null],
+["T2-96", 96398.1294, 103103.7695,"T2",0,null,null,null],
+["T2-95", 96396.9972, 103104.6753,"T2",0,null,null,null],
+["T2-94", 96392.8625, 103108.3993,"T2",0,null,null,null],
+["T2-93", 96401.3583, 103098.9133,"T2",0,null,null,null],
+["T2-92", 96398.7971, 103100.7381,"T2",0,null,null,null],
+["T2-91", 96397.0206, 103102.3834,"T2",0,null,null,null],
+["T2-90", 96395.8883, 103103.2893,"T2",0,null,null,null],
+["T2-89", 96393.8932, 103104.6612,"T2",0,null,null,null],
+["T2-88", 96391.5506, 103106.7594,"T2",0,null,null,null],
+["T2-87", 96399.0118, 103096.9486,"T2",0,null,null,null],
+["T2-86", 96397.0323, 103098.5322,"T2",0,null,null,null],
+["T2-85", 96395.1465, 103100.0408,"T2",0,null,null,null],
+["T2-84", 96394.0143, 103100.9466,"T2",0,null,null,null],
+["T2-83", 96392.1285, 103102.4553,"T2",0,null,null,null],
+["T2-82", 96390.149,  103104.0389,"T2",0,null,null,null],
+["T2-81", 96397.6101, 103094.228,"T2",0,null,null,null],
+["T2-80", 96395.2675, 103096.3262,"T2",0,null,null,null],
+["T2-79", 96393.2724, 103097.6982,"T2",0,null,null,null],
+["T2-78", 96392.1402, 103098.604,"T2",0,null,null,null],
+["T2-77", 96390.3637, 103100.2493,"T2",0,null,null,null],
+["T2-76", 96387.8024, 103102.0742,"T2",0,null,null,null],
+["T2-75", 96396.2983, 103092.5882,"T2",0,null,null,null],
+["T2-74", 96392.1636, 103096.3122,"T2",0,null,null,null],
+["T2-73", 96391.0313, 103097.218,"T2",0,null,null,null],
+["T2-72", 96386.4906, 103100.4344,"T2",0,null,null,null],
+["T2-71", 96394.7053, 103090.597,"T2",0,null,null,null],
+["T2-70", 96392.2534, 103092.5586,"T2",0,null,null,null],
+["T2-69", 96390.3676, 103094.0672,"T2",0,null,null,null],
+["T2-68", 96389.0823, 103094.7817,"T2",0,null,null,null],
+["T2-67", 96387.1965, 103096.2903,"T2",0,null,null,null],
+["T2-66", 96385.217, 103097.8739,"T2",0,null,null,null],
+["T2-65", 96392.964, 103088.1482,"T2",0,null,null,null],
+["T2-64", 96391.0899, 103089.6475,"T2",0,null,null,null],
+["T2-63", 96389.2158, 103091.1468,"T2",0,null,null,null],
+["T2-62", 96385.4286, 103094.0805,"T2",0,null,null,null],
+["T2-61", 96387.127, 103092.3376,"T2",0,null,null,null],
+["T2-60", 96382.9923, 103096.0616,"T2",0,null,null,null],
+["T2-59", 96391.4647, 103086.2741,"T2",0,null,null,null],
+["T2-58", 96389.5906, 103087.7734,"T2",0,null,null,null],
+["T2-57", 96387.7165, 103089.2727,"T2",0,null,null,null],
+["T2-56", 96386.0181, 103090.9515,"T2",0,null,null,null],
+["T2-55", 96381.6804, 103094.4217,"T2",0,null,null,null],
+["T2-54", 96389.4579, 103084.0377,"T2",0,null,null,null],
+["T2-53", 96387.0059, 103085.9993,"T2",0,null,null,null],
+["T2-52", 96384.1409, 103088.605,"T2",0,null,null,null],
+["T2-51", 96385.1201, 103087.5079,"T2",0,null,null,null],
+["T2-50", 96382.2551, 103090.1137,"T2",0,null,null,null],
+["T2-49", 96380.2756, 103091.6973,"T2",0,null,null,null],
+["T2-48", 96387.8649, 103082.0465,"T2",0,null,null,null],
+["T2-47", 96383.3241, 103085.2629,"T2",0,null,null,null],
+["T2-46", 96382.1919, 103086.1687,"T2",0,null,null,null],
+["T2-45", 96378.0572, 103089.8927,"T2",0,null,null,null],
+["T2-44", 96386.553, 103080.4067,"T2",0,null,null,null],
+["T2-43", 96383.9918, 103082.2316,"T2",0,null,null,null],
+["T2-42", 96382.2153, 103083.8769,"T2",0,null,null,null],
+["T2-41", 96381.083, 103084.7827,"T2",0,null,null,null],
+["T2-40", 96379.0879, 103086.1547,"T2",0,null,null,null],
+["T2-39", 96376.7453, 103088.2529,"T2",0,null,null,null],
+["T2-38", 96384.2065, 103078.442,"T2",0,null,null,null],
+["T2-37", 96382.227, 103080.0256,"T2",0,null,null,null],
+["T2-36", 96380.3412, 103081.5343,"T2",0,null,null,null],
+["T2-35", 96379.2089, 103082.4401,"T2",0,null,null,null],
+["T2-34", 96377.3232, 103083.9487,"T2",0,null,null,null],
+["T2-33", 96375.3437, 103085.5323,"T2",0,null,null,null],
+["T2-32", 96382.8048, 103075.7215,"T2",0,null,null,null],
+["T2-31", 96380.4622, 103077.8197,"T2",0,null,null,null],
+["T2-30", 96378.4671, 103079.1917,"T2",0,null,null,null],
+["T2-29", 96377.3349, 103080.0975,"T2",0,null,null,null],
+["T2-28", 96375.5584, 103081.7428,"T2",0,null,null,null],
+["T2-27", 96372.9971, 103083.5677,"T2",0,null,null,null],
+["T2-26", 96381.493, 103074.0817,"T2",0,null,null,null],
+["T2-25", 96377.3583, 103077.8056,"T2",0,null,null,null],
+["T2-24", 96376.226, 103078.7114,"T2",0,null,null,null],
+["T2-23", 96371.6853, 103081.9278,"T2",0,null,null,null],
+["T2-22", 96379.2714, 103072.2732,"T2",0,null,null,null],
+["T2-21", 96377.2919, 103073.8568,"T2",0,null,null,null],
+["T2-20", 96375.4061, 103075.3654,"T2",0,null,null,null],
+["T2-19", 96373.2587, 103077.0833,"T2",0,null,null,null],
+["T2-18", 96371.3729, 103078.592,"T2",0,null,null,null],
+["T2-17", 96369.3934, 103080.1756,"T2",0,null,null,null],
+["T2-16", 96377.9947, 103069.7088,"T2",0,null,null,null],
+["T2-15", 96373.4539, 103072.9252,"T2",0,null,null,null],
+["T2-14", 96371.3065, 103074.6431,"T2",0,null,null,null],
+["T2-13", 96367.1718, 103078.3671,"T2",0,null,null,null],
+["T2-12", 96376.6828, 103068.069,"T2",0,null,null,null],
+["T2-11", 96374.1216, 103069.8939,"T2",0,null,null,null],
+["T2-10", 96372.3451, 103071.5392,"T2",0,null,null,null],
+["T2-9", 96370.1977, 103073.2571,"T2",0,null,null,null],
+["T2-8", 96368.2026, 103074.6291,"T2",0,null,null,null],
+["T2-7", 96365.86, 103076.7273,"T2",0,null,null,null],
+["T2-6", 96374.3363, 103066.1043,"T2",0,null,null,null],
+["T2-5", 96372.3568, 103067.6879,"T2",0,null,null,null],
+["T2-4", 96370.471, 103069.1966,"T2",0,null,null,null],
+["T2-3", 96368.3236, 103070.9145,"T2",0,null,null,null],
+["T2-2", 96366.4378, 103072.4231,"T2",0,null,null,null],
+["T2-1", 96364.4583, 103074.0067,"T2",0,null,null,null],
+];
+
+const M_VTL = computeMeta(P_VTL, { 
+  diam: 0.6,
+  tol: 5.0
+});
+
 const P_BAR = [
   ["T1-51", 99263.87, 99792.171, "T1", 1, 99263.871, 99792.173, 0.3],
   ["T1-49", 99261.177, 99791.007, "T1", 1, 99261.177, 99791.007, 0.09],
@@ -1138,7 +1430,7 @@ const P_NY = [
   ["T1-102", 99352.216, 99645.524, "T1", 1, 99352.216, 99645.524, 0.09],
   ["T1-96", 99359.318, 99643.847, "T1", 1, 99359.320, 99643.847, 0.09],
   ["T1-97", 99360.842, 99642.889, "T1", 1, 99360.842, 99642.889, 0.09],
-  ["T1-98", 99363.936, 99640.944, "T1", 1, 99363.367, 99640.945, 0.09],
+  ["T1-98", 99363.936, 99640.944, "T1", 1, 99363.967, 99640.945, 0.09],
   ["T1-99", 99362.680, 99638.946, "T1", 1, 99362.682, 99638.946, 0.09],
   ["T1-91", 99359.588, 99647.002, "T1", 1, 99359.589, 99647.002, 0.09],
   ["T1-92", 99355.706, 99649.442, "T1", 1, 99355.706, 99649.442, 0.09],
@@ -1249,15 +1541,65 @@ const M_NY = {"n": 384, "done": 0, "pending": 384, "minx": 99343.859, "maxx": 99
 
 let viewStyle='plan', filter='all', selId=null, devMag=1;
 
-// === Proyectos (cada obra es un proyecto; las torres se aíslan dentro) ===
-const PROJECTS=[
-  {id:'ny', name:'Pilotes NuevaYork', client:'PILOTES_NUEVA_YORK.dwg', piles:P_NY, meta:M_NY},
-  {id:'bcn', name:'Pilotes Barcelona', client:'PILOTES_BARCELONA.dwg', piles:P_BAR, meta:M_BAR},
-];
-PROJECTS.forEach(p=>{p.meta=computeMeta(p.piles,p.meta||{});});
-let activeProj=null;
-let PILES=[], META={};
-let measureMode=false, measA=null, measB=null, towerFilter='all';
+// =========================================================
+// PROYECTOS
+// Cada proyecto contiene todos sus datos.
+// Para crear otro proyecto, solo hay que añadir otro bloque.
+// =========================================================
+
+const PROJECTS = {
+
+  "BARCELONA": {
+    nombre: "Pilotes Barcelona",
+    archivo: "PILOTES_BARCELONA.dwg",
+    pilotes: P_BAR,
+    resumen: M_BAR
+  },
+
+  "NUEVAYORK": {
+    nombre: "Pilotes NuevaYork",
+    archivo: "PILOTES_NUEVA_YORK.dwg",
+    pilotes: P_NY,
+    resumen: M_NY
+  },
+
+  "VITALIAKRA50": {
+    nombre: "Pilotes Vitalia cra50",
+    archivo: "VITALIA_PILOTES.dwg",
+    pilotes: P_VTL,
+    resumen: M_VTL
+  }
+};
+
+
+// Lista interna para que la interfaz siga funcionando igual
+const PROJECT_LIST = Object.entries(PROJECTS).map(([id, p]) => ({
+  id,
+  ...p
+}));
+
+
+
+
+// Calcula automáticamente los datos de resumen
+PROJECT_LIST.forEach(p => {
+  p.resumen = computeMeta(
+    p.pilotes,
+    p.resumen || {}
+  );
+});
+
+
+let activeProj = null;
+
+let PILES = [];
+let META = {};
+
+let measureMode = false;
+let measA = null;
+let measB = null;
+let towerFilter = 'all';
+
 
 // Casco convexo (monotone chain) sobre puntos {x,y} en metros
 function convexHull(pts){
@@ -1988,59 +2330,7 @@ const fmt=(n,d=2)=>n.toLocaleString('es-CO',{minimumFractionDigits:d,maximumFrac
 function devColor(dev){return dev<=5?'#5fd97a':dev<=10?'#ffcf4a':'#ff5c6c';}
 function statusOf(p){if(!p[4])return'pend';const d=p[7];return d<=5?'ok':d<=10?'warn':'bad';}
 
-function computeMeta(piles, baseMeta={tol:5.0,diam:0.6}){
-  const n=piles.length;
-  let done=0, tol_ok=0, tol_warn=0, tol_bad=0, sumdev=0, maxdev=0;
-  let minx=Infinity,maxx=-Infinity,miny=Infinity,maxy=-Infinity,t1=0,t2=0;
-  for(const p of piles){
-    const x=p[1], y=p[2];
-    minx=Math.min(minx,x); maxx=Math.max(maxx,x); miny=Math.min(miny,y); maxy=Math.max(maxy,y);
-    if(p[3]==='T1') t1++;
-    if(p[3]==='T2') t2++;
-    // Si no hay replanteado, no computar desviación
-    if(!p[4]) continue;
-    done++;
-    // Normalizar desviación a centímetros a partir de coordenadas cuando estén disponibles
-    let d = 0;
-    if(typeof p[5]==='number' && typeof p[6]==='number'){
-      const de = (p[5]-p[1])*100; // cm
-      const dn = (p[6]-p[2])*100; // cm
-      d = Math.hypot(de,dn);
-      // Actualizar p[7] con la desviación normalizada en cm
-      p[7] = Number(d);
-    } else {
-      // Fallback: si p[7] existe, intentar inferir unidad
-      const raw = Number(p[7]) || 0;
-      // Si el valor es pequeño (<=3) es muy probable que sea metros -> convertir a cm
-      // Si es mayor, asumir ya está en cm
-      d = raw > 3 ? raw : raw * 100;
-      p[7] = d;
-    }
-    sumdev += d;
-    maxdev = Math.max(maxdev,d);
-    if(d<=baseMeta.tol) tol_ok++;
-    else if(d<=10) tol_warn++;
-    else tol_bad++;
-  }
-  return {
-    ...baseMeta,
-    n,
-    done,
-    pending:n-done,
-    minx:isFinite(minx)?minx:0,
-    maxx:isFinite(maxx)?maxx:0,
-    miny:isFinite(miny)?miny:0,
-    maxy:isFinite(maxy)?maxy:0,
-    diam:baseMeta.diam||0.6,
-    t1,
-    t2,
-    tol_ok,
-    tol_warn,
-    tol_bad,
-    avgdev: done? sumdev/done : 0,
-    maxdev,
-  };
-}
+
 
 function world(x,y){const s=baseScale*cam.zoom;return{x:W/2+(x-cx0)*s+cam.ox,y:H/2-(y-cy0)*s+cam.oy};}
 function resize(){
@@ -2716,16 +3006,48 @@ function setV(v){
 
 function setMag(m){devMag=m;document.querySelectorAll('.magb').forEach(b=>b.classList.toggle('active',+b.dataset.m===m));draw();}
 function setF(f){filter=f;document.querySelectorAll('.filt button').forEach(b=>b.classList.toggle('active',b.dataset.f===f));renderList();draw();}
+
 function renderProjects(){
-  document.getElementById('projList').innerHTML=PROJECTS.map(p=>{
-    const meta = p.meta || computeMeta(p.piles,p.meta||{});
-    const pct=Math.round(100*meta.done/meta.n);
-    return `<div class="proj ${activeProj&&p.id===activeProj.id?'active':''}" onclick="selectProject('${p.id}')">
-      <div class="pn"><span class="dot" style="animation:none"></span>${p.name}</div>
-      <div class="pm">${meta.done}/${meta.n} pilotes · ${pct}%</div>
-      <div class="pbar"><i style="width:${pct}%"></i></div></div>`;
-  }).join('');
+
+  document.getElementById('projList').innerHTML =
+    PROJECT_LIST.map(p => {
+
+      const meta = p.resumen;
+
+      const pct = meta.n
+        ? Math.round(100 * meta.done / meta.n)
+        : 0;
+
+      return `
+        <div
+          class="proj ${activeProj && p.id === activeProj.id ? 'active' : ''}"
+          onclick="selectProject('${p.id}')"
+        >
+
+          <div class="pn">
+            <span
+              class="dot"
+              style="animation:none"
+            ></span>
+
+            ${p.nombre}
+          </div>
+
+          <div class="pm">
+            ${meta.done}/${meta.n} pilotes · ${pct}%
+          </div>
+
+          <div class="pbar">
+            <i style="width:${pct}%"></i>
+          </div>
+
+        </div>
+      `;
+
+    }).join('');
 }
+
+
 function renderTowerButtons(){
   const towers=[...new Set(PILES.map(p=>p[3]))].sort();
   const colors={T1:'#ff7a2f',T2:'#3ad6c7',T3:'#ffcf4a',T4:'#a78bfa',T5:'#5fd97a'};
@@ -2736,24 +3058,104 @@ function renderTowerButtons(){
   });
   document.getElementById('twrBtns').innerHTML=html;
 }
+
 function selectProject(id){
-  activeProj=PROJECTS.find(p=>p.id===id);
-  PILES=activeProj.piles; META=activeProj.meta;
-  cx0=(META.minx+META.maxx)/2; cy0=(META.miny+META.maxy)/2;
-  filter='all'; towerFilter='all'; selId=null; measureMode=false; measA=measB=null;
-  document.getElementById('filePill').textContent=activeProj.client;
-  document.getElementById('liveTxt').textContent=`i76 · ${META.done} puntos replanteados`;
-  document.getElementById('detail').classList.remove('show');
-  document.getElementById('measOut').style.display='none';
-  document.getElementById('measBtn').classList.remove('active');
-  document.getElementById('q').value='';
-  document.querySelectorAll('.filt button').forEach(b=>b.classList.toggle('active',b.dataset.f==='all'));
-  renderProjects(); renderTowerButtons(); renderStats(); renderList();
-  requestAnimationFrame(()=>{resize();fitView();});
-   document
-   .querySelector(".side")
-   .classList.remove("open");
+
+  // Buscar el proyecto por su código
+  activeProj = PROJECTS[id];
+
+  if(!activeProj){
+    console.error('Proyecto no encontrado:', id);
+    return;
+  }
+
+
+  // Datos que utiliza toda la plataforma
+  PILES = activeProj.pilotes;
+  META  = activeProj.resumen;
+
+
+  // Centro del proyecto
+  cx0 = (META.minx + META.maxx) / 2;
+  cy0 = (META.miny + META.maxy) / 2;
+
+
+  // Reiniciar filtros
+  filter = 'all';
+  towerFilter = 'all';
+
+  selId = null;
+
+  measureMode = false;
+  measA = null;
+  measB = null;
+
+
+  // Nombre del archivo en el encabezado
+  document.getElementById('filePill').textContent =
+    activeProj.archivo;
+
+
+  // Estado de conexión
+  document.getElementById('liveTxt').textContent =
+    `i76 · ${META.done} puntos replanteados`;
+
+
+  // Cerrar detalle del pilote
+  document
+    .getElementById('detail')
+    .classList
+    .remove('show');
+
+
+  // Reiniciar medición
+  document.getElementById('measOut').style.display = 'none';
+
+  document
+    .getElementById('measBtn')
+    .classList
+    .remove('active');
+
+
+  // Limpiar buscador
+  document.getElementById('q').value = '';
+
+
+  // Activar "Todos"
+  document
+    .querySelectorAll('.filt button')
+    .forEach(b =>
+      b.classList.toggle(
+        'active',
+        b.dataset.f === 'all'
+      )
+    );
+
+
+  // Redibujar toda la interfaz
+  renderProjects();
+  renderTowerButtons();
+  renderStats();
+  renderList();
+
+
+  // Ajustar el mapa al nuevo proyecto
+  requestAnimationFrame(() => {
+
+    resize();
+    fitView();
+
+  });
+
+
+  // En móvil, cerrar menú
+  document
+    .querySelector(".side")
+    .classList
+    .remove("open");
 }
+
+
 function setTower(t){
   towerFilter=t;document.querySelectorAll('.twrb').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
   // ajustar vista a los puntos visibles
@@ -2856,5 +3258,5 @@ function expReport(){const pct=Math.round(100*META.done/META.n);toast('Reporte d
 function toast(t,s){document.getElementById('toastTxt').innerHTML=`${t}${s?`<small>${s}</small>`:''}`;const el=document.getElementById('toast');el.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>el.classList.remove('show'),3400);}
 
 window.addEventListener('resize',()=>{DPR=Math.max(1,window.devicePixelRatio||1);resize();});
-selectProject('ny');
+selectProject('NUEVAYORK');
 </script>
